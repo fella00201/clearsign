@@ -7,7 +7,20 @@ export const useListings = create((set, get) => ({
   filterCat: 'all',
   filterTags: [],
 
-  loadListings: () => set({ listings: SEED }),
+  loadListings: () => {
+    try {
+      const userListings = JSON.parse(localStorage.getItem('cs_listings_user') || '[]')
+      const seen = new Set()
+      const merged = [...userListings, ...SEED].filter(l => {
+        if (seen.has(l.id)) return false
+        seen.add(l.id)
+        return true
+      })
+      set({ listings: merged })
+    } catch {
+      set({ listings: SEED })
+    }
+  },
 
   setSearch: (q) => set({ searchQ: q }),
 
@@ -24,4 +37,13 @@ export const useListings = create((set, get) => ({
   },
 
   clearTagFilters: () => set({ filterTags: [] }),
+
+  addListing: (listing) => {
+    const next = [listing, ...get().listings];
+    set({ listings: next });
+    try {
+      const existing = JSON.parse(localStorage.getItem('cs_listings_user') || '[]');
+      localStorage.setItem('cs_listings_user', JSON.stringify([listing, ...existing]));
+    } catch {}
+  },
 }));
