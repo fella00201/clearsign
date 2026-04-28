@@ -1,122 +1,44 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import heroImg from './assets/hero.png'
-import './App.css'
+import { Routes, Route, Navigate } from 'react-router-dom'
+import { useAuth } from './store/useAuth'
+import Auth from './screens/Auth'
 
-function App() {
-  const [count, setCount] = useState(0)
+const Screen = ({ name }) => (
+  <div style={{
+    minHeight: '100svh',
+    background: '#0d0d11',
+    color: '#eeedf5',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    fontFamily: "'Instrument Sans', sans-serif",
+    fontSize: 18,
+  }}>
+    {name}
+  </div>
+)
 
-  return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
-        </div>
-        <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.jsx</code> and save to test <code>HMR</code>
-          </p>
-        </div>
-        <button
-          type="button"
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
-        >
-          Count is {count}
-        </button>
-      </section>
-
-      <div className="ticks"></div>
-
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
-        </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
-
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
-  )
+function RequireAuth({ children }) {
+  const user = useAuth((s) => s.user)
+  return user ? children : <Navigate to="/auth" replace />
 }
 
-export default App
+export default function App() {
+  const user = useAuth((s) => s.user)
+
+  return (
+    <Routes>
+      <Route path="/auth" element={user ? <Navigate to="/" replace /> : <Auth />} />
+      <Route path="/" element={<RequireAuth><Screen name="Discover" /></RequireAuth>} />
+      <Route path="/listing/:id" element={<RequireAuth><Screen name="Listing" /></RequireAuth>} />
+      <Route path="/post" element={<RequireAuth><Screen name="PostListing" /></RequireAuth>} />
+      <Route path="/messages" element={<RequireAuth><Screen name="Messages" /></RequireAuth>} />
+      <Route path="/chat/:threadId" element={<RequireAuth><Screen name="Chat" /></RequireAuth>} />
+      <Route path="/contract/:id" element={<RequireAuth><Screen name="Contract" /></RequireAuth>} />
+      <Route path="/signing" element={<RequireAuth><Screen name="Signing" /></RequireAuth>} />
+      <Route path="/vault" element={<RequireAuth><Screen name="Vault" /></RequireAuth>} />
+      <Route path="/notifications" element={<RequireAuth><Screen name="Notifications" /></RequireAuth>} />
+      <Route path="/profile" element={<RequireAuth><Screen name="Profile" /></RequireAuth>} />
+      <Route path="*" element={<Navigate to="/" replace />} />
+    </Routes>
+  )
+}
