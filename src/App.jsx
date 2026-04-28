@@ -4,6 +4,8 @@ import Auth from './screens/Auth'
 import Discover from './screens/Discover'
 import Listing from './screens/Listing'
 import PostListing from './screens/PostListing'
+import Messages from './screens/Messages'
+import Chat from './screens/Chat'
 
 const Screen = ({ name }) => (
   <div style={{
@@ -34,8 +36,8 @@ export default function App() {
       <Route path="/" element={<RequireAuth><Discover /></RequireAuth>} />
       <Route path="/listing/:id" element={<RequireAuth><Listing /></RequireAuth>} />
       <Route path="/post" element={<RequireAuth><PostListing /></RequireAuth>} />
-      <Route path="/messages" element={<RequireAuth><Screen name="Messages" /></RequireAuth>} />
-      <Route path="/chat/:threadId" element={<RequireAuth><Screen name="Chat" /></RequireAuth>} />
+      <Route path="/messages" element={<RequireAuth><Messages /></RequireAuth>} />
+      <Route path="/chat/:threadId" element={<RequireAuth><Chat /></RequireAuth>} />
       <Route path="/contract/:id" element={<RequireAuth><Screen name="Contract" /></RequireAuth>} />
       <Route path="/signing" element={<RequireAuth><Screen name="Signing" /></RequireAuth>} />
       <Route path="/vault" element={<RequireAuth><Screen name="Vault" /></RequireAuth>} />

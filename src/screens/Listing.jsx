@@ -103,6 +103,26 @@ export default function Listing() {
     navigate('/')
   }
 
+  function startMessage() {
+    if (!user) return
+    const tid = 'thread:' + [user.email, listing.ownerEmail].sort().join(':') + '::' + listing.id
+    try {
+      const all = JSON.parse(localStorage.getItem('cs_threads') || '[]')
+      if (!all.find(t => t.id === tid)) {
+        const now = new Date().toISOString()
+        all.push({
+          id: tid,
+          listingId: listing.id, listingTitle: listing.title,
+          p1: user.email, p1Name: user.name, p1Color: user.avatarColor,
+          p2: listing.ownerEmail, p2Name: listing.ownerName, p2Color: listing.ownerColor,
+          messages: [], createdAt: now, lastAt: now,
+        })
+        localStorage.setItem('cs_threads', JSON.stringify(all))
+      }
+    } catch {}
+    navigate(`/chat/${encodeURIComponent(tid)}`)
+  }
+
   return (
     <div style={{
       minHeight: '100svh', background: bg,
@@ -279,7 +299,7 @@ export default function Listing() {
           display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 9,
         }}>
           <button
-            onClick={() => navigate('/messages')}
+            onClick={startMessage}
             style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7, padding: 14, borderRadius: 14, border: `1px solid ${bdr}`, background: bg3, color: text, fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: sans, transition: 'all 0.18s' }}
           >
             💬 Message
