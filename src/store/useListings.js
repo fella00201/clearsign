@@ -24,25 +24,4 @@ export const useListings = create((set, get) => ({
   },
 
   clearTagFilters: () => set({ filterTags: [] }),
-
-  // Computed getter — call as useListings(s => s.filteredListings())
-  filteredListings: () => {
-    const { listings, searchQ, filterCat, filterTags } = get();
-    const q = searchQ.toLowerCase();
-
-    return listings.filter((l) => {
-      if (filterCat !== 'all' && l.cat !== filterCat) return false;
-      if (filterTags.length > 0) {
-        const lt = l.tags ?? [];
-        if (!filterTags.every((t) => lt.includes(t))) return false;
-      }
-      if (q) {
-        const hay = [l.title, l.location, l.description ?? '', ...(l.tags ?? [])]
-          .join(' ')
-          .toLowerCase();
-        return hay.includes(q);
-      }
-      return true;
-    });
-  },
 }));

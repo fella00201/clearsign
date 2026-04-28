@@ -1,6 +1,7 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { useAuth } from './store/useAuth'
 import Auth from './screens/Auth'
+import Discover from './screens/Discover'
 
 const Screen = ({ name }) => (
   <div style={{
@@ -28,7 +29,7 @@ export default function App() {
   return (
     <Routes>
       <Route path="/auth" element={user ? <Navigate to="/" replace /> : <Auth />} />
-      <Route path="/" element={<RequireAuth><Screen name="Discover" /></RequireAuth>} />
+      <Route path="/" element={<RequireAuth><Discover /></RequireAuth>} />
       <Route path="/listing/:id" element={<RequireAuth><Screen name="Listing" /></RequireAuth>} />
       <Route path="/post" element={<RequireAuth><Screen name="PostListing" /></RequireAuth>} />
       <Route path="/messages" element={<RequireAuth><Screen name="Messages" /></RequireAuth>} />
