@@ -12,8 +12,8 @@ const t2    = '#9896b2'
 const t3    = '#56546c'
 const acc   = '#5b8fff'
 const green = '#3ecf7a'
-const sans  = "'Instrument Sans', sans-serif"
-const serif = "'Fraunces', serif"
+const sans  = "'Inter', sans-serif"
+const serif = "'Sora', sans-serif"
 
 export default function Signing() {
   const navigate      = useNavigate()

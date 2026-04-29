@@ -12,8 +12,8 @@ const t3   = '#56546c'
 const acc  = '#5b8fff'
 const r    = '14px'
 const rs   = '8px'
-const sans = "'Instrument Sans', sans-serif"
-const serif = "'Fraunces', serif"
+const sans = "'Inter', sans-serif"
+const serif = "'Sora', sans-serif"
 
 const FEATURES = [
   ['🏠', 'Discover rentals & services'],

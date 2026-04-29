@@ -4,7 +4,7 @@ const t3  = '#56546c'
 const acc = '#5b8fff'
 const bdr = '#2a2a36'
 const bg  = '#0d0d11'
-const sans = "'Instrument Sans', sans-serif"
+const sans = "'Inter', sans-serif"
 
 const TABS = [
   {

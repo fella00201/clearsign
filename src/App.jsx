@@ -29,8 +29,8 @@ const t3    = '#56546c'
 const acc   = '#5b8fff'
 const acc2  = '#3d6ee0'
 const accbg = '#141f3c'
-const sans  = "'Instrument Sans', sans-serif"
-const serif = "'Fraunces', serif"
+const sans  = "'Inter', sans-serif"
+const serif = "'Sora', sans-serif"
 
 const AI_SYSTEM = `You are the ClearSign assistant. ClearSign is a marketplace where people post rentals, services and gigs and sign AI-generated contracts. Help users navigate the app, find listings, understand contracts, and answer questions. Keep answers short and friendly.`
 

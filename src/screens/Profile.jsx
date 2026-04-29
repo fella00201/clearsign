@@ -14,8 +14,8 @@ const t2    = '#9896b2'
 const t3    = '#56546c'
 const acc   = '#5b8fff'
 const amber = '#f5a623'
-const sans  = "'Instrument Sans', sans-serif"
-const serif = "'Fraunces', serif"
+const sans  = "'Inter', sans-serif"
+const serif = "'Sora', sans-serif"
 
 const BADGE = {
   'b-rental':  { bg: '#1a2d4a', color: '#7eb8ff', border: '#1e3560' },

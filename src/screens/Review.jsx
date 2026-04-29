@@ -15,8 +15,8 @@ const amber = '#f5a623'
 const green = '#3ecf7a'
 const greenbg  = '#0c2018'
 const greenbdr = '#183a28'
-const sans  = "'Instrument Sans', sans-serif"
-const serif = "'Fraunces', serif"
+const sans  = "'Inter', sans-serif"
+const serif = "'Sora', sans-serif"
 
 const LABELS = ['', 'Poor', 'Fair', 'Good', 'Great', 'Excellent!']
 

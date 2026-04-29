@@ -14,8 +14,8 @@ const t3    = '#56546c'
 const acc   = '#5b8fff'
 const green = '#3ecf7a'
 const greenbg = '#0c2018'
-const sans  = "'Instrument Sans', sans-serif"
-const serif = "'Fraunces', serif"
+const sans  = "'Inter', sans-serif"
+const serif = "'Sora', sans-serif"
 
 function fmtDate(iso) {
   if (!iso) return ''

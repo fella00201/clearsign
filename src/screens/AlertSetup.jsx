@@ -13,8 +13,8 @@ const t3    = '#56546c'
 const acc   = '#5b8fff'
 const red   = '#ff5b5b'
 const redbg = '#220d0d'
-const sans  = "'Instrument Sans', sans-serif"
-const serif = "'Fraunces', serif"
+const sans  = "'Inter', sans-serif"
+const serif = "'Sora', sans-serif"
 
 function useToast() {
   const [toast, setToast] = useState(null)

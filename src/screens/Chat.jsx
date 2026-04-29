@@ -11,8 +11,8 @@ const t2   = '#9896b2'
 const t3   = '#56546c'
 const acc  = '#5b8fff'
 const acc2 = '#3d6ee0'
-const sans = "'Instrument Sans', sans-serif"
-const serif = "'Fraunces', serif"
+const sans = "'Inter', sans-serif"
+const serif = "'Sora', sans-serif"
 
 function initials(name) {
   return name.split(' ').map(w => w[0] || '').slice(0, 2).join('').toUpperCase() || '?'
