@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../store/useAuth'
 import { CATS, TAGS } from '../data/categories'
@@ -16,6 +17,14 @@ const acc   = '#5b8fff'
 const amber = '#f5a623'
 const sans  = "'Inter', sans-serif"
 const serif = "'Sora', sans-serif"
+
+// Light-mode surface colours (applied via body.light CSS)
+const LIGHT = {
+  bg:   '#f8f8f5',
+  bg2:  '#ffffff',
+  bg3:  '#f0f0ec',
+  text: '#0f0e17',
+}
 
 const BADGE = {
   'b-rental':  { bg: '#1a2d4a', color: '#7eb8ff', border: '#1e3560' },
@@ -66,7 +75,7 @@ function ListingCard({ listing, onNavigate }) {
         </div>
         {price && <div style={{ fontSize: 15, fontWeight: 700, color: text }}>{price}</div>}
       </div>
-      <div style={{ fontFamily: serif, fontSize: 15, fontWeight: 300, color: text, marginBottom: 3 }}>{listing.title}</div>
+      <div style={{ fontFamily: serif, fontSize: 15, fontWeight: 400, color: text, marginBottom: 3 }}>{listing.title}</div>
       <div style={{ fontSize: 12, color: t2, display: 'flex', alignItems: 'center', gap: 4, marginBottom: shown.length ? 8 : 0 }}>
         <svg width="11" height="11" viewBox="0 0 12 12" fill="none">
           <path d="M6 1C4.3 1 3 2.3 3 4c0 2.5 3 7 3 7s3-4.5 3-7c0-1.7-1.3-3-3-3z" stroke="currentColor" strokeWidth="1.2" />
@@ -96,10 +105,32 @@ function ListingCard({ listing, onNavigate }) {
   )
 }
 
+// ── Theme helpers ──────────────────────────────────────────────────────────
+function applyTheme(theme) {
+  const root = document.documentElement
+  if (theme === 'light') {
+    document.body.classList.add('light')
+    root.style.setProperty('--cs-bg',   LIGHT.bg)
+    root.style.setProperty('--cs-bg2',  LIGHT.bg2)
+    root.style.setProperty('--cs-bg3',  LIGHT.bg3)
+    root.style.setProperty('--cs-text', LIGHT.text)
+  } else {
+    document.body.classList.remove('light')
+    root.style.removeProperty('--cs-bg')
+    root.style.removeProperty('--cs-bg2')
+    root.style.removeProperty('--cs-bg3')
+    root.style.removeProperty('--cs-text')
+  }
+}
+
 export default function Profile() {
   const navigate = useNavigate()
   const user     = useAuth(s => s.user)
   const signout  = useAuth(s => s.signout)
+
+  const [theme, setTheme] = useState(
+    () => localStorage.getItem('cs_theme') || 'dark'
+  )
 
   let myListings = []
   try {
@@ -112,13 +143,20 @@ export default function Profile() {
     navigate('/auth', { replace: true })
   }
 
+  function toggleTheme() {
+    const next = theme === 'dark' ? 'light' : 'dark'
+    setTheme(next)
+    localStorage.setItem('cs_theme', next)
+    applyTheme(next)
+  }
+
   return (
     <div style={{ minHeight: '100svh', background: bg, display: 'flex', flexDirection: 'column', maxWidth: 480, margin: '0 auto', fontFamily: sans, fontSize: 15, color: text }}>
 
       {/* Topbar */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '13px 16px', background: bg, borderBottom: `1px solid ${bdr}`, flexShrink: 0 }}>
-        <div style={{ fontFamily: serif, fontSize: 20, fontWeight: 500, color: text }}>
-          Clear<b style={{ color: acc, fontWeight: 500 }}>Sign</b>
+        <div style={{ fontFamily: serif, fontSize: 20, fontWeight: 600, color: text }}>
+          Clear<b style={{ color: acc, fontWeight: 600 }}>Sign</b>
         </div>
         <div style={{ width: 34 }} />
       </div>
@@ -136,7 +174,7 @@ export default function Profile() {
           }}>
             {initials(user?.name || '')}
           </div>
-          <div style={{ fontFamily: serif, fontSize: 22, fontWeight: 300, color: text }}>
+          <div style={{ fontFamily: serif, fontSize: 22, fontWeight: 400, color: text }}>
             {user?.name}
           </div>
           <div style={{ fontSize: 13, color: t2 }}>{user?.email}</div>
@@ -157,8 +195,45 @@ export default function Profile() {
           </div>
         )}
 
+        {/* ── Settings ── */}
+        <div style={{ marginTop: 24, marginBottom: 16 }}>
+          <div style={{ fontSize: 11, fontWeight: 700, color: t3, textTransform: 'uppercase', letterSpacing: '0.8px', marginBottom: 10 }}>
+            Appearance
+          </div>
+          <div style={{ background: bg3, border: `1px solid ${bdr}`, borderRadius: 14, padding: '0 16px' }}>
+            <div style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+              padding: '14px 0', minHeight: 44,
+            }}>
+              <div>
+                <div style={{ fontSize: 14, fontWeight: 600, color: text }}>Theme</div>
+                <div style={{ fontSize: 12, color: t2, marginTop: 2 }}>
+                  {theme === 'light' ? 'Light mode' : 'Dark mode'}
+                </div>
+              </div>
+              {/* Sun / Moon toggle */}
+              <button
+                onClick={toggleTheme}
+                title={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}
+                style={{
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  width: 48, height: 48, borderRadius: 12,
+                  border: `1px solid ${bdr}`,
+                  background: theme === 'light' ? '#f5a62322' : bg4,
+                  cursor: 'pointer', fontSize: 22,
+                  transition: 'all 0.22s ease',
+                }}
+                onMouseEnter={e => { e.currentTarget.style.borderColor = bdr2 }}
+                onMouseLeave={e => { e.currentTarget.style.borderColor = bdr }}
+              >
+                {theme === 'light' ? '🌙' : '☀️'}
+              </button>
+            </div>
+          </div>
+        </div>
+
         {/* Sign out */}
-        <div style={{ marginTop: 20 }}>
+        <div>
           <button
             onClick={handleSignOut}
             style={{

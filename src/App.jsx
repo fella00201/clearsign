@@ -266,6 +266,22 @@ const Screen = ({ name }) => (
   </div>
 )
 
+// ── Theme initialiser (runs once on cold start) ───────────────────────────────
+function ThemeInit() {
+  useEffect(() => {
+    const saved = localStorage.getItem('cs_theme')
+    if (saved === 'light') {
+      document.body.classList.add('light')
+      const root = document.documentElement
+      root.style.setProperty('--cs-bg',   '#f8f8f5')
+      root.style.setProperty('--cs-bg2',  '#ffffff')
+      root.style.setProperty('--cs-bg3',  '#f0f0ec')
+      root.style.setProperty('--cs-text', '#0f0e17')
+    }
+  }, [])
+  return null
+}
+
 // ── App ───────────────────────────────────────────────────────────────────────
 export default function App() {
   const user = useAuth(s => s.user)
@@ -273,6 +289,7 @@ export default function App() {
   return (
     <>
       <GlobalStyles />
+      <ThemeInit />
       <Routes>
         <Route path="/auth"          element={user ? <Navigate to="/" replace /> : <Auth />} />
         <Route path="/"              element={<RequireAuth><Discover /></RequireAuth>} />

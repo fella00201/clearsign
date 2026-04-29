@@ -50,8 +50,40 @@
   }
 }
 
+/* ── ClearSign theme tokens (overridden by JS via Profile toggle) ── */
+:root {
+  --cs-bg:   #0d0d11;
+  --cs-bg2:  #141418;
+  --cs-bg3:  #1e1e26;
+  --cs-text: #eeedf5;
+}
+
 body {
   margin: 0;
+  background: var(--cs-bg);
+  color: var(--cs-text);
+  transition: background 0.25s ease, color 0.25s ease;
+}
+
+/* ── Light mode ── */
+body.light {
+  --cs-bg:   #f8f8f5;
+  --cs-bg2:  #ffffff;
+  --cs-bg3:  #f0f0ec;
+  --cs-text: #0f0e17;
+}
+
+body.light #root {
+  background: #f8f8f5;
+  color: #0f0e17;
+}
+
+/* meta theme-color hint for mobile browsers */
+body.light {
+  color-scheme: light;
+}
+body:not(.light) {
+  color-scheme: dark;
 }
 
 #root {
