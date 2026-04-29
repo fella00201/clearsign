@@ -44,7 +44,7 @@ export default function Contract() {
   const contracts       = useContracts(s => s.contracts)
   const activeDoc       = useContracts(s => s.activeDoc)
 
-  useEffect(() => { loadContracts() }, [loadContracts])
+  useEffect(() => { loadContracts(user?.email) }, [loadContracts, user?.email])
 
   const contract = (activeDoc?.id === id ? activeDoc : null)
     ?? contracts.find(c => c.id === id)

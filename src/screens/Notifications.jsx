@@ -64,7 +64,7 @@ export default function Notifications() {
   const [notifs, setNotifs] = useState([])
 
   useEffect(() => {
-    loadContracts()
+    loadContracts(user?.email)
     if (!user) return
     try {
       const raw = localStorage.getItem(`cs_notifs_${user.email}`)

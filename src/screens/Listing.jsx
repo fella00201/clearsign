@@ -329,9 +329,10 @@ export default function Listing() {
                   counterpartyColor: listing.ownerColor,
                   createdAt: new Date().toISOString(),
                 }
-                saveContract(doc)
+                // await so we get the canonical Supabase UUID (or the local id on failure)
+                const saved = await saveContract(doc)
 
-                // Notify the counterparty
+                // Notify the counterparty — use saved.id so the deep link works
                 try {
                   const notifKey = `cs_notifs_${listing.ownerEmail}`
                   const existing = JSON.parse(localStorage.getItem(notifKey) || '[]')
@@ -342,12 +343,12 @@ export default function Listing() {
                     body: `${user.name} wants to sign for: "${listing.title}"`,
                     at: new Date().toISOString(),
                     read: false,
-                    contractId: doc.id,
+                    contractId: saved.id,
                   }
                   localStorage.setItem(notifKey, JSON.stringify([notif, ...existing]))
                 } catch {}
 
-                navigate(`/contract/${doc.id}`)
+                navigate(`/contract/${saved.id}`)
               } catch {
                 setGenerating(false)
               }

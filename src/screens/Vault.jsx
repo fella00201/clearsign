@@ -47,7 +47,7 @@ export default function Vault() {
   const loadContracts  = useContracts(s => s.loadContracts)
   const setActiveDoc   = useContracts(s => s.setActiveDoc)
 
-  useEffect(() => { loadContracts() }, [loadContracts])
+  useEffect(() => { loadContracts(user?.email) }, [loadContracts, user?.email])
 
   const mine = contracts.filter(c =>
     c.creatorEmail === user?.email || c.counterpartyEmail === user?.email
