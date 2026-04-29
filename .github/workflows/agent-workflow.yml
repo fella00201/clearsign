@@ -11,7 +11,7 @@ jobs:
   orchestrate:
     name: Orchestrator agent
     runs-on: ubuntu-latest
-    if: github.event_name == 'issues' && github.event.action == 'opened'
+    if: false
     timeout-minutes: 15
     permissions:
       issues: write
