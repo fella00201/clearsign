@@ -1,10 +1,10 @@
-import { useEffect, useMemo } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useListings } from '../store/useListings'
 import { useAuth } from '../store/useAuth'
 import { CATS, TAGS, ALL_POPULAR_TAGS } from '../data/categories'
 
-// ── Design tokens (mirrors v3.html :root) ──────────────────────────────────
+// ── Design tokens ──────────────────────────────────────────────────────────
 const bg    = '#0d0d11'
 const bg2   = '#141418'
 const bg3   = '#1e1e26'
@@ -27,6 +27,19 @@ const BADGE = {
   'b-service': { bg: '#220d18', color: '#ff7eb3', border: '#3a1528' },
   'b-sale':    { bg: '#231a04', color: '#f5a623', border: '#3a2a08' },
   'b-seek':    { bg: '#0c2018', color: '#3ecf7a', border: '#183a28' },
+}
+
+// ── Responsive hook ────────────────────────────────────────────────────────
+function useIsDesktop() {
+  const [isDesktop, setIsDesktop] = useState(
+    () => typeof window !== 'undefined' && window.innerWidth >= 1024
+  )
+  useEffect(() => {
+    const fn = () => setIsDesktop(window.innerWidth >= 1024)
+    window.addEventListener('resize', fn)
+    return () => window.removeEventListener('resize', fn)
+  }, [])
+  return isDesktop
 }
 
 // ── Helpers ────────────────────────────────────────────────────────────────
@@ -81,12 +94,12 @@ function ListingCard({ listing, onNavigate }) {
     listing.asking_price || listing.loan_amount || listing.total_fee ||
     listing.max_budget || listing.max_rate || ''
   const tags      = listing.tags || []
-  const shownTags = tags.slice(0, 4)
+  const shownTags = tags.slice(0, 3)
 
   return (
     <div
       onClick={() => onNavigate(`/listing/${listing.id}`)}
-      style={{ background: bg2, border: `1px solid ${bdr}`, borderRadius: 14, padding: 16, marginBottom: 10, cursor: 'pointer', transition: 'all 0.18s ease' }}
+      style={{ background: bg2, border: `1px solid ${bdr}`, borderRadius: 14, padding: 16, cursor: 'pointer', transition: 'all 0.18s ease', display: 'flex', flexDirection: 'column' }}
       onMouseEnter={e => { e.currentTarget.style.borderColor = bdr2; e.currentTarget.style.background = bg3 }}
       onMouseLeave={e => { e.currentTarget.style.borderColor = bdr;  e.currentTarget.style.background = bg2 }}
     >
@@ -101,11 +114,11 @@ function ListingCard({ listing, onNavigate }) {
           <span style={{ width: 5, height: 5, borderRadius: '50%', background: 'currentColor', flexShrink: 0 }} />
           {cfg.icon} {cfg.label}
         </div>
-        {price && <div style={{ fontSize: 17, fontWeight: 700, color: text }}>{price}</div>}
+        {price && <div style={{ fontSize: 15, fontWeight: 700, color: text }}>{price}</div>}
       </div>
 
       {/* Title */}
-      <div style={{ fontFamily: serif, fontSize: 16, fontWeight: 300, color: text, marginBottom: 3 }}>
+      <div style={{ fontFamily: serif, fontSize: 15, fontWeight: 400, color: text, marginBottom: 3 }}>
         {listing.title}
       </div>
 
@@ -120,7 +133,7 @@ function ListingCard({ listing, onNavigate }) {
 
       {/* Description preview */}
       {listing.description && (
-        <div style={{ fontSize: 12, color: t2, lineHeight: 1.5, marginBottom: 8 }}>
+        <div style={{ fontSize: 12, color: t2, lineHeight: 1.5, marginBottom: 8, flex: 1 }}>
           {listing.description.length > 80 ? listing.description.slice(0, 80) + '…' : listing.description}
         </div>
       )}
@@ -129,13 +142,13 @@ function ListingCard({ listing, onNavigate }) {
       {shownTags.length > 0 && (
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5, marginBottom: 10 }}>
           {shownTags.map(t => <TagPill key={t} tag={t} subcat={listing.subcat} />)}
-          {tags.length > 4 && (
+          {tags.length > 3 && (
             <span style={{
               display: 'inline-flex', alignItems: 'center',
               fontSize: 11, fontWeight: 600, padding: '3px 9px', borderRadius: 999,
               background: bg4, color: t3, border: `1px solid ${bdr}`,
             }}>
-              +{tags.length - 4}
+              +{tags.length - 3}
             </span>
           )}
         </div>
@@ -234,6 +247,7 @@ function NavBar({ active }) {
 export default function Discover() {
   const navigate = useNavigate()
   const user = useAuth(s => s.user)
+  const isDesktop = useIsDesktop()
 
   const listings     = useListings(s => s.listings)
   const searchQ      = useListings(s => s.searchQ)
@@ -277,11 +291,82 @@ export default function Discover() {
 
   const noAlerts = user && (!user.alerts || !user.alerts.length)
 
+  // ── Shared search bar ──────────────────────────────────────────────────
+  const searchBar = (
+    <div style={{
+      display: 'flex', alignItems: 'center', gap: 8,
+      background: bg3, border: `1px solid ${bdr}`,
+      borderRadius: 8, padding: '10px 13px',
+    }}>
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style={{ flexShrink: 0 }}>
+        <circle cx="6.5" cy="6.5" r="4.5" stroke={t3} strokeWidth="1.3" />
+        <path d="M10 10l3 3" stroke={t3} strokeWidth="1.3" strokeLinecap="round" />
+      </svg>
+      <input
+        type="text"
+        placeholder="Search location, type, tag, keyword…"
+        value={searchQ}
+        onChange={e => setSearch(e.target.value)}
+        style={{
+          flex: 1, background: 'none', border: 'none', outline: 'none',
+          fontFamily: sans, fontSize: 14, color: text,
+        }}
+      />
+      {searchQ && (
+        <button
+          onClick={() => setSearch('')}
+          style={{ background: 'none', border: 'none', color: t3, cursor: 'pointer', fontSize: 16, padding: '0 2px', lineHeight: 1 }}
+        >
+          ✕
+        </button>
+      )}
+    </div>
+  )
+
+  // ── Shared alert banner ────────────────────────────────────────────────
+  const alertBanner = noAlerts ? (
+    <div onClick={() => navigate('/alert-setup')} style={{
+      background: accbg, border: `1px solid ${acc}`, borderRadius: 14,
+      padding: '11px 14px', display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer',
+    }}>
+      <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+        <path d="M9 1.5a5.5 5.5 0 015.5 5.5c0 3.2-5.5 10-5.5 10S3.5 10.2 3.5 7A5.5 5.5 0 019 1.5z" stroke={acc} strokeWidth="1.3" />
+        <circle cx="9" cy="7" r="1.5" fill={acc} />
+      </svg>
+      <div>
+        <div style={{ fontSize: 13, fontWeight: 600, color: acc }}>Set up location alerts</div>
+        <div style={{ fontSize: 11, color: t2, marginTop: 1 }}>Get notified when listings appear near you</div>
+      </div>
+    </div>
+  ) : null
+
+  // ── Empty state ────────────────────────────────────────────────────────
+  const emptyState = (
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '50px 24px', textAlign: 'center', gap: 10 }}>
+      <div style={{ fontSize: 36, marginBottom: 6 }}>🔍</div>
+      <h3 style={{ fontFamily: serif, fontSize: 20, fontWeight: 400, color: text, margin: 0 }}>No listings found</h3>
+      <p style={{ fontSize: 13, color: t2, maxWidth: 240, lineHeight: 1.6, margin: 0 }}>
+        {searchQ || filterTags.length
+          ? 'Try different keywords or clear the tag filters.'
+          : 'No listings yet. Be the first to post!'}
+      </p>
+      {filterTags.length > 0 && (
+        <button onClick={clearTags} style={{
+          marginTop: 8, padding: '8px 14px', fontSize: 12, borderRadius: 8,
+          border: `1px solid ${bdr}`, background: bg3, color: text,
+          cursor: 'pointer', fontFamily: sans, fontWeight: 600,
+        }}>
+          Clear tag filters
+        </button>
+      )}
+    </div>
+  )
+
   return (
     <div style={{
       minHeight: '100svh', background: bg,
       display: 'flex', flexDirection: 'column',
-      maxWidth: 480, margin: '0 auto',
+      maxWidth: isDesktop ? 1200 : 480, margin: '0 auto',
       fontFamily: sans, fontSize: 15, color: text,
     }}>
 
@@ -291,8 +376,8 @@ export default function Discover() {
         padding: '13px 16px', background: bg,
         borderBottom: `1px solid ${bdr}`, flexShrink: 0, zIndex: 10,
       }}>
-        <div style={{ fontFamily: serif, fontSize: 20, fontWeight: 500, color: text }}>
-          Clear<b style={{ color: acc, fontWeight: 500 }}>Sign</b>
+        <div style={{ fontFamily: serif, fontSize: 20, fontWeight: 600, color: text }}>
+          Clear<b style={{ color: acc, fontWeight: 600 }}>Sign</b>
         </div>
         <button
           onClick={() => navigate('/notifications')}
@@ -305,146 +390,206 @@ export default function Discover() {
         </button>
       </div>
 
-      {/* ── Scrollable body ── */}
-      <div style={{ flex: 1, overflowY: 'auto', WebkitOverflowScrolling: 'touch' }}>
+      {isDesktop ? (
+        // ── Desktop layout ──────────────────────────────────────────────────
+        <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
 
-        {/* Search bar */}
-        <div style={{
-          display: 'flex', alignItems: 'center', gap: 8,
-          background: bg3, border: `1px solid ${bdr}`,
-          borderRadius: 8, padding: '10px 13px', margin: '12px 16px 4px',
-        }}>
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style={{ flexShrink: 0 }}>
-            <circle cx="6.5" cy="6.5" r="4.5" stroke={t3} strokeWidth="1.3" />
-            <path d="M10 10l3 3" stroke={t3} strokeWidth="1.3" strokeLinecap="round" />
-          </svg>
-          <input
-            type="text"
-            placeholder="Search location, type, tag, keyword…"
-            value={searchQ}
-            onChange={e => setSearch(e.target.value)}
-            style={{
-              flex: 1, background: 'none', border: 'none', outline: 'none',
-              fontFamily: sans, fontSize: 14, color: text,
-            }}
-          />
-          {searchQ && (
-            <button
-              onClick={() => setSearch('')}
-              style={{ background: 'none', border: 'none', color: t3, cursor: 'pointer', fontSize: 16, padding: '0 2px', lineHeight: 1 }}
-            >
-              ✕
-            </button>
-          )}
-        </div>
-
-        {/* Category chips */}
-        <div style={{ display: 'flex', gap: 7, padding: '10px 16px 4px', overflowX: 'auto', scrollbarWidth: 'none' }}>
-          {[['all', null, 'All'], ...Object.entries(CATS).map(([k, c]) => [k, c.icon, c.label])].map(([k, icon, label]) => {
-            const on = filterCat === k
-            return (
-              <div key={k} onClick={() => setFilter(k)} style={{
-                display: 'flex', alignItems: 'center', gap: 5,
-                background: on ? accbg : bg3,
-                border: `1px solid ${on ? acc : bdr}`,
-                borderRadius: 999, padding: '6px 13px',
-                fontSize: 12, fontWeight: 600, color: on ? acc : t2,
-                cursor: 'pointer', transition: 'all 0.18s', whiteSpace: 'nowrap', flexShrink: 0,
-              }}>
-                {icon && <span>{icon}</span>}{label}
-              </div>
-            )
-          })}
-        </div>
-
-        {/* Tag filter row */}
-        <div style={{ display: 'flex', gap: 6, padding: '4px 16px 8px', overflowX: 'auto', scrollbarWidth: 'none' }}>
-          {filterTags.length > 0 && (
-            <div onClick={clearTags} style={{
-              display: 'inline-flex', alignItems: 'center', gap: 4,
-              fontSize: 11, fontWeight: 700, padding: '5px 11px', borderRadius: 999,
-              cursor: 'pointer', border: `1.5px solid ${red}`,
-              background: redbg, color: red, whiteSpace: 'nowrap', flexShrink: 0,
-            }}>
-              ✕ Clear tags
-            </div>
-          )}
-          {suggestedTags.map(t => {
-            const on = filterTags.includes(t)
-            return (
-              <div key={t} onClick={() => toggleTag(t)} style={{
-                display: 'inline-flex', alignItems: 'center', gap: 4,
-                fontSize: 11, fontWeight: 700, padding: '5px 11px', borderRadius: 999,
-                cursor: 'pointer', transition: 'all 0.18s',
-                border: `1.5px solid ${on ? acc : bdr}`,
-                background: on ? accbg : bg3, color: on ? acc : t2,
-                whiteSpace: 'nowrap', flexShrink: 0,
-              }}>
-                {t}
-              </div>
-            )
-          })}
-        </div>
-
-        {/* Active filter summary */}
-        {filterTags.length > 0 && (
-          <div style={{ padding: '2px 16px 6px', fontSize: 12, color: acc }}>
-            Filtering by: {filterTags.map((t, i) => (
-              <span key={t}>{i > 0 && ', '}<strong>{t}</strong></span>
-            ))}
-          </div>
-        )}
-
-        {/* Location alert banner */}
-        {noAlerts && (
-          <div onClick={() => navigate('/alert-setup')} style={{
-            margin: '6px 16px', background: accbg,
-            border: `1px solid ${acc}`, borderRadius: 14,
-            padding: '11px 14px', display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer',
+          {/* Sidebar */}
+          <div style={{
+            width: 260, flexShrink: 0,
+            borderRight: `1px solid ${bdr}`,
+            overflowY: 'auto', WebkitOverflowScrolling: 'touch',
+            background: bg,
           }}>
-            <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-              <path d="M9 1.5a5.5 5.5 0 015.5 5.5c0 3.2-5.5 10-5.5 10S3.5 10.2 3.5 7A5.5 5.5 0 019 1.5z" stroke={acc} strokeWidth="1.3" />
-              <circle cx="9" cy="7" r="1.5" fill={acc} />
-            </svg>
-            <div>
-              <div style={{ fontSize: 13, fontWeight: 600, color: acc }}>Set up location alerts</div>
-              <div style={{ fontSize: 11, color: t2, marginTop: 1 }}>Get notified when listings appear near you</div>
+            {/* Category section */}
+            <div style={{ padding: '20px 12px 16px' }}>
+              <div style={{ fontSize: 10, fontWeight: 700, color: t3, textTransform: 'uppercase', letterSpacing: '0.8px', marginBottom: 8, padding: '0 4px' }}>
+                Category
+              </div>
+              {[['all', null, 'All'], ...Object.entries(CATS).map(([k, c]) => [k, c.icon, c.label])].map(([k, icon, label]) => {
+                const on = filterCat === k
+                return (
+                  <div key={k} onClick={() => setFilter(k)} style={{
+                    display: 'flex', alignItems: 'center', gap: 8,
+                    padding: '8px 10px', borderRadius: 8, cursor: 'pointer', marginBottom: 2,
+                    background: on ? accbg : 'transparent',
+                    border: `1px solid ${on ? acc : 'transparent'}`,
+                    color: on ? acc : t2,
+                    transition: 'all 0.18s',
+                    minHeight: 44,
+                  }}
+                  onMouseEnter={e => { if (!on) { e.currentTarget.style.background = bg3; e.currentTarget.style.color = text } }}
+                  onMouseLeave={e => { if (!on) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = t2 } }}
+                  >
+                    {icon && <span>{icon}</span>}
+                    <span style={{ fontSize: 13, fontWeight: 600 }}>{label}</span>
+                  </div>
+                )
+              })}
             </div>
-          </div>
-        )}
 
-        {/* Count header */}
-        <div style={{ fontSize: 11, fontWeight: 700, color: t3, textTransform: 'uppercase', letterSpacing: '0.8px', padding: '14px 16px 8px' }}>
-          {filtered.length} listing{filtered.length !== 1 ? 's' : ''}
-        </div>
-
-        {/* Listing cards / empty state */}
-        <div style={{ padding: '0 16px 90px' }}>
-          {filtered.length > 0
-            ? filtered.map(l => <ListingCard key={l.id} listing={l} onNavigate={navigate} />)
-            : (
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '50px 24px', textAlign: 'center', gap: 10 }}>
-                <div style={{ fontSize: 36, marginBottom: 6 }}>🔍</div>
-                <h3 style={{ fontFamily: serif, fontSize: 20, fontWeight: 300, color: text, margin: 0 }}>No listings found</h3>
-                <p style={{ fontSize: 13, color: t2, maxWidth: 240, lineHeight: 1.6, margin: 0 }}>
-                  {searchQ || filterTags.length
-                    ? 'Try different keywords or clear the tag filters.'
-                    : 'No listings yet. Be the first to post!'}
-                </p>
+            {/* Tag section */}
+            <div style={{ borderTop: `1px solid ${bdr}`, padding: '16px 12px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10, padding: '0 4px' }}>
+                <div style={{ fontSize: 10, fontWeight: 700, color: t3, textTransform: 'uppercase', letterSpacing: '0.8px' }}>
+                  Tags
+                </div>
                 {filterTags.length > 0 && (
-                  <button onClick={clearTags} style={{
-                    marginTop: 8, padding: '8px 14px', fontSize: 12, borderRadius: 8,
-                    border: `1px solid ${bdr}`, background: bg3, color: text,
-                    cursor: 'pointer', fontFamily: sans, fontWeight: 600,
-                  }}>
-                    Clear tag filters
-                  </button>
+                  <div onClick={clearTags} style={{ fontSize: 11, color: red, cursor: 'pointer', fontWeight: 700 }}>
+                    Clear
+                  </div>
                 )}
               </div>
-            )
-          }
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5 }}>
+                {suggestedTags.slice(0, 24).map(t => {
+                  const on = filterTags.includes(t)
+                  return (
+                    <div key={t} onClick={() => toggleTag(t)} style={{
+                      display: 'inline-flex', alignItems: 'center',
+                      fontSize: 11, fontWeight: 600, padding: '5px 10px', borderRadius: 999,
+                      cursor: 'pointer', transition: 'all 0.18s',
+                      border: `1.5px solid ${on ? acc : bdr}`,
+                      background: on ? accbg : bg3, color: on ? acc : t2,
+                    }}>
+                      {t}
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          </div>
+
+          {/* Main content */}
+          <div style={{ flex: 1, overflowY: 'auto', WebkitOverflowScrolling: 'touch', display: 'flex', flexDirection: 'column' }}>
+            {/* Search bar */}
+            <div style={{ padding: '16px 20px 8px' }}>
+              {searchBar}
+            </div>
+
+            {/* Alert banner */}
+            {noAlerts && (
+              <div style={{ padding: '4px 20px 8px' }}>
+                {alertBanner}
+              </div>
+            )}
+
+            {/* Active tag filter summary */}
+            {filterTags.length > 0 && (
+              <div style={{ padding: '2px 20px 6px', fontSize: 12, color: acc }}>
+                Filtering by: {filterTags.map((t, i) => (
+                  <span key={t}>{i > 0 && ', '}<strong>{t}</strong></span>
+                ))}
+              </div>
+            )}
+
+            {/* Count header */}
+            <div style={{ fontSize: 11, fontWeight: 700, color: t3, textTransform: 'uppercase', letterSpacing: '0.8px', padding: '10px 20px 12px' }}>
+              {filtered.length} listing{filtered.length !== 1 ? 's' : ''}
+            </div>
+
+            {/* 3-column grid */}
+            {filtered.length > 0 ? (
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(3, 1fr)',
+                gap: 14,
+                padding: '0 20px 40px',
+                alignItems: 'start',
+              }}>
+                {filtered.map(l => <ListingCard key={l.id} listing={l} onNavigate={navigate} />)}
+              </div>
+            ) : (
+              emptyState
+            )}
+          </div>
         </div>
-      </div>
+      ) : (
+        // ── Mobile layout ───────────────────────────────────────────────────
+        <div style={{ flex: 1, overflowY: 'auto', WebkitOverflowScrolling: 'touch' }}>
+
+          {/* Search bar */}
+          <div style={{ margin: '12px 16px 4px' }}>
+            {searchBar}
+          </div>
+
+          {/* Category chips */}
+          <div style={{ display: 'flex', gap: 7, padding: '10px 16px 4px', overflowX: 'auto', scrollbarWidth: 'none' }}>
+            {[['all', null, 'All'], ...Object.entries(CATS).map(([k, c]) => [k, c.icon, c.label])].map(([k, icon, label]) => {
+              const on = filterCat === k
+              return (
+                <div key={k} onClick={() => setFilter(k)} style={{
+                  display: 'flex', alignItems: 'center', gap: 5,
+                  background: on ? accbg : bg3,
+                  border: `1px solid ${on ? acc : bdr}`,
+                  borderRadius: 999, padding: '6px 13px',
+                  fontSize: 12, fontWeight: 600, color: on ? acc : t2,
+                  cursor: 'pointer', transition: 'all 0.18s', whiteSpace: 'nowrap', flexShrink: 0,
+                }}>
+                  {icon && <span>{icon}</span>}{label}
+                </div>
+              )
+            })}
+          </div>
+
+          {/* Tag filter row */}
+          <div style={{ display: 'flex', gap: 6, padding: '4px 16px 8px', overflowX: 'auto', scrollbarWidth: 'none' }}>
+            {filterTags.length > 0 && (
+              <div onClick={clearTags} style={{
+                display: 'inline-flex', alignItems: 'center', gap: 4,
+                fontSize: 11, fontWeight: 700, padding: '5px 11px', borderRadius: 999,
+                cursor: 'pointer', border: `1.5px solid ${red}`,
+                background: redbg, color: red, whiteSpace: 'nowrap', flexShrink: 0,
+              }}>
+                ✕ Clear tags
+              </div>
+            )}
+            {suggestedTags.map(t => {
+              const on = filterTags.includes(t)
+              return (
+                <div key={t} onClick={() => toggleTag(t)} style={{
+                  display: 'inline-flex', alignItems: 'center', gap: 4,
+                  fontSize: 11, fontWeight: 700, padding: '5px 11px', borderRadius: 999,
+                  cursor: 'pointer', transition: 'all 0.18s',
+                  border: `1.5px solid ${on ? acc : bdr}`,
+                  background: on ? accbg : bg3, color: on ? acc : t2,
+                  whiteSpace: 'nowrap', flexShrink: 0,
+                }}>
+                  {t}
+                </div>
+              )
+            })}
+          </div>
+
+          {/* Active filter summary */}
+          {filterTags.length > 0 && (
+            <div style={{ padding: '2px 16px 6px', fontSize: 12, color: acc }}>
+              Filtering by: {filterTags.map((t, i) => (
+                <span key={t}>{i > 0 && ', '}<strong>{t}</strong></span>
+              ))}
+            </div>
+          )}
+
+          {/* Location alert banner */}
+          {noAlerts && (
+            <div style={{ margin: '6px 16px' }}>
+              {alertBanner}
+            </div>
+          )}
+
+          {/* Count header */}
+          <div style={{ fontSize: 11, fontWeight: 700, color: t3, textTransform: 'uppercase', letterSpacing: '0.8px', padding: '14px 16px 8px' }}>
+            {filtered.length} listing{filtered.length !== 1 ? 's' : ''}
+          </div>
+
+          {/* Listing cards / empty state */}
+          <div style={{ padding: '0 16px 90px' }}>
+            {filtered.length > 0
+              ? filtered.map(l => <ListingCard key={l.id} listing={l} onNavigate={navigate} />)
+              : emptyState
+            }
+          </div>
+        </div>
+      )}
 
       <NavBar active="discover" />
     </div>
