@@ -120,19 +120,27 @@ export default function Sealed() {
         </div>
 
         {/* Actions */}
-        <div style={{ width: '100%', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 9, animation: 'cs-fade-up 0.5s ease-out 0.7s both' }}>
+        <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: 9, animation: 'cs-fade-up 0.5s ease-out 0.7s both' }}>
           <button
-            onClick={() => navigate(`/contract/${activeDoc.id}`)}
-            style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 14, borderRadius: 14, border: `1px solid ${bdr}`, background: bg2, color: text, fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: sans }}
+            onClick={() => navigate('/review', { state: { contractId: activeDoc.id, listingId: activeDoc.listingId, targetName: activeDoc.counterpartyName } })}
+            style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 14, borderRadius: 14, border: 'none', background: green, color: '#071a0f', fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: sans, width: '100%' }}
           >
-            View contract
+            ⭐ Leave a review →
           </button>
-          <button
-            onClick={() => navigate('/vault')}
-            style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 14, borderRadius: 14, border: 'none', background: green, color: '#071a0f', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: sans }}
-          >
-            My vault →
-          </button>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 9 }}>
+            <button
+              onClick={() => navigate(`/contract/${activeDoc.id}`)}
+              style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 14, borderRadius: 14, border: `1px solid ${bdr}`, background: bg2, color: text, fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: sans }}
+            >
+              View contract
+            </button>
+            <button
+              onClick={() => navigate('/vault')}
+              style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 14, borderRadius: 14, border: `1px solid ${bdr}`, background: bg2, color: text, fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: sans }}
+            >
+              My vault →
+            </button>
+          </div>
         </div>
       </div>
     </div>

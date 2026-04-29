@@ -13,7 +13,7 @@ function loadSession() {
   }
 }
 
-export const useAuth = create((set) => ({
+export const useAuth = create((set, get) => ({
   user: loadSession(),
   loading: false,
 
@@ -48,5 +48,14 @@ export const useAuth = create((set) => ({
   signout: () => {
     localStorage.removeItem(SESSION_KEY);
     set({ user: null });
+  },
+
+  updateAlerts: (alerts) => {
+    const user = { ...get().user, alerts }
+    try {
+      localStorage.setItem(profileKey(user.email), JSON.stringify(user))
+      localStorage.setItem(SESSION_KEY, JSON.stringify(user))
+    } catch {}
+    set({ user })
   },
 }));

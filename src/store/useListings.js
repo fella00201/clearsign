@@ -38,6 +38,16 @@ export const useListings = create((set, get) => ({
 
   clearTagFilters: () => set({ filterTags: [] }),
 
+  updateListing: (id, updates) => {
+    const listings = get().listings.map(l => l.id === id ? { ...l, ...updates } : l)
+    set({ listings })
+    try {
+      const existing = JSON.parse(localStorage.getItem('cs_listings_user') || '[]')
+      const updated  = existing.map(l => l.id === id ? { ...l, ...updates } : l)
+      localStorage.setItem('cs_listings_user', JSON.stringify(updated))
+    } catch {}
+  },
+
   addListing: (listing) => {
     const next = [listing, ...get().listings];
     set({ listings: next });

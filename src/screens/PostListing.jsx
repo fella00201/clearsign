@@ -178,6 +178,38 @@ function Field({ fieldKey, meta, value, onChange }) {
   )
 }
 
+function fireAlerts(listing) {
+  try {
+    const profileKeys = Object.keys(localStorage).filter(k => k.startsWith('cs_profile_'))
+    profileKeys.forEach(key => {
+      try {
+        const user = JSON.parse(localStorage.getItem(key))
+        if (!user || !user.alerts || user.email === listing.ownerEmail) return
+        const matched = user.alerts.some(alert => {
+          const locMatch = !alert.location ||
+            listing.location.toLowerCase().includes(alert.location.toLowerCase())
+          const catMatch = !alert.cat || alert.cat === 'all' || alert.cat === listing.cat
+          return locMatch && catMatch
+        })
+        if (matched) {
+          const notifKey = `cs_notifs_${user.email}`
+          const existing = JSON.parse(localStorage.getItem(notifKey) || '[]')
+          const notif = {
+            id: Math.random().toString(36).slice(2, 10),
+            type: 'alert_match',
+            title: 'New listing near you!',
+            body: listing.title + ' in ' + listing.location,
+            at: new Date().toISOString(),
+            read: false,
+            listingId: listing.id,
+          }
+          localStorage.setItem(notifKey, JSON.stringify([notif, ...existing]))
+        }
+      } catch {}
+    })
+  } catch {}
+}
+
 // ── Main screen ────────────────────────────────────────────────────────────
 export default function PostListing() {
   const [step, setStep]               = useState(1)
@@ -237,6 +269,7 @@ export default function PostListing() {
       avgRating: 0,
     }
     addListing(listing)
+    fireAlerts(listing)
     navigate('/')
   }
 

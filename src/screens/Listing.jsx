@@ -330,6 +330,23 @@ export default function Listing() {
                   createdAt: new Date().toISOString(),
                 }
                 saveContract(doc)
+
+                // Notify the counterparty
+                try {
+                  const notifKey = `cs_notifs_${listing.ownerEmail}`
+                  const existing = JSON.parse(localStorage.getItem(notifKey) || '[]')
+                  const notif = {
+                    id: Math.random().toString(36).slice(2, 10),
+                    type: 'contract_request',
+                    title: 'New contract request',
+                    body: `${user.name} wants to sign for: "${listing.title}"`,
+                    at: new Date().toISOString(),
+                    read: false,
+                    contractId: doc.id,
+                  }
+                  localStorage.setItem(notifKey, JSON.stringify([notif, ...existing]))
+                } catch {}
+
                 navigate(`/contract/${doc.id}`)
               } catch {
                 setGenerating(false)

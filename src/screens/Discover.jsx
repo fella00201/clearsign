@@ -397,7 +397,7 @@ export default function Discover() {
 
         {/* Location alert banner */}
         {noAlerts && (
-          <div onClick={() => navigate('/notifications')} style={{
+          <div onClick={() => navigate('/alert-setup')} style={{
             margin: '6px 16px', background: accbg,
             border: `1px solid ${acc}`, borderRadius: 14,
             padding: '11px 14px', display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer',
