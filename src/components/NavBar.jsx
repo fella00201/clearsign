@@ -1,9 +1,14 @@
+import { useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useAuth } from '../store/useAuth'
+import { useMessages } from '../store/useMessages'
+import { supabase } from '../lib/supabase'
 
 const t3  = '#56546c'
 const acc = '#5b8fff'
 const bdr = '#2a2a36'
 const bg  = '#0d0d11'
+const red = '#ff5b5b'
 const sans = "'Inter', sans-serif"
 
 const TABS = [
@@ -55,7 +60,33 @@ const TABS = [
 ]
 
 export default function NavBar({ active }) {
-  const navigate = useNavigate()
+  const navigate        = useNavigate()
+  const user            = useAuth(s => s.user)
+  const unreadCount     = useMessages(s => s.unreadCount)
+  const loadUnreadCount = useMessages(s => s.loadUnreadCount)
+
+  useEffect(() => {
+    if (!user?.email) return
+
+    loadUnreadCount(user.email)
+
+    const channel = supabase
+      .channel('unread-badge')
+      .on('postgres_changes', {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'messages',
+      }, payload => {
+        const msg = payload.new
+        if (msg.from_email !== user.email) {
+          useMessages.setState(s => ({ unreadCount: s.unreadCount + 1 }))
+        }
+      })
+      .subscribe()
+
+    return () => supabase.removeChannel(channel)
+  }, [user?.email])
+
   return (
     <div style={{
       display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)',
@@ -63,7 +94,8 @@ export default function NavBar({ active }) {
       paddingBottom: 'env(safe-area-inset-bottom)',
     }}>
       {TABS.map(({ id, path, label, icon }) => {
-        const on = active === id
+        const on         = active === id
+        const showBadge  = id === 'messages' && unreadCount > 0
         return (
           <button key={id} onClick={() => navigate(path)} style={{
             display: 'flex', flexDirection: 'column', alignItems: 'center',
@@ -71,7 +103,21 @@ export default function NavBar({ active }) {
             border: 'none', background: 'none', cursor: 'pointer',
             fontFamily: sans,
           }}>
-            {icon(on)}
+            <div style={{ position: 'relative' }}>
+              {icon(on)}
+              {showBadge && (
+                <div style={{
+                  position: 'absolute', top: -4, right: -6,
+                  minWidth: 16, height: 16, borderRadius: 999,
+                  background: red, color: '#fff',
+                  fontSize: 10, fontWeight: 700,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  padding: '0 3px',
+                }}>
+                  {unreadCount > 99 ? '99+' : unreadCount}
+                </div>
+              )}
+            </div>
             <span style={{ fontSize: 10, fontWeight: 600, color: on ? acc : t3 }}>{label}</span>
           </button>
         )

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useAuth } from '../store/useAuth'
+import { useMessages } from '../store/useMessages'
 import {
   supabase,
   fetchThreadById,
@@ -53,6 +54,8 @@ export default function Chat() {
   const { threadId } = useParams()
   const navigate     = useNavigate()
   const user         = useAuth(s => s.user)
+
+  const loadUnreadCount = useMessages(s => s.loadUnreadCount)
 
   const [thread, setThread]     = useState(null)
   const [messages, setMessages] = useState([])
@@ -137,6 +140,26 @@ export default function Chat() {
       .subscribe()
 
     return () => supabase.removeChannel(channel)
+  }, [threadId, user?.email])
+
+  // Mark all unread messages from the other party as read, then refresh badge
+  useEffect(() => {
+    if (!threadId || !user?.email) return
+    const decoded = decodeURIComponent(threadId)
+    if (!UUID_RE.test(decoded)) return
+
+    async function markRead() {
+      try {
+        await supabase
+          .from('messages')
+          .update({ read: true })
+          .eq('thread_id', decoded)
+          .neq('from_email', user.email)
+        loadUnreadCount(user.email)
+      } catch {}
+    }
+
+    markRead()
   }, [threadId, user?.email])
 
   async function sendMessage() {
