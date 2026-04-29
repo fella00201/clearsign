@@ -400,3 +400,30 @@ export async function updateThreadLastAt(threadId) {
     .eq('id', threadId);
   if (error) throw error;
 }
+
+/**
+ * Count unread messages across all threads the user participates in,
+ * excluding messages they sent themselves.
+ * @param {string} userEmail
+ * @returns {Promise<number>}
+ */
+export async function fetchUnreadMessageCount(userEmail) {
+  const { data: threads, error: tErr } = await supabase
+    .from('threads')
+    .select('id')
+    .or(`p1_email.eq.${userEmail},p2_email.eq.${userEmail}`);
+
+  if (tErr || !threads?.length) return 0;
+
+  const threadIds = threads.map(t => t.id);
+
+  const { count, error: mErr } = await supabase
+    .from('messages')
+    .select('*', { count: 'exact', head: true })
+    .in('thread_id', threadIds)
+    .eq('read', false)
+    .neq('from_email', userEmail);
+
+  if (mErr) return 0;
+  return count ?? 0;
+}
