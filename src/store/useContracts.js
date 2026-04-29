@@ -37,8 +37,8 @@ export const useContracts = create((set, get) => ({
     const contracts = get().contracts.map((c) => {
       if (c.id !== contractId) return c;
       return role === 'creator'
-        ? { ...c, creator_signed_at: now,      creator_sig_data: sigData }
-        : { ...c, counterparty_signed_at: now, counterparty_sig_data: sigData };
+        ? { ...c, creatorSignedAt: now,      creatorSigData: sigData }
+        : { ...c, counterpartySignedAt: now, counterpartySigData: sigData };
     });
     persist(contracts);
     set({ contracts, activeDoc: contracts.find((c) => c.id === contractId) ?? get().activeDoc });
@@ -47,7 +47,7 @@ export const useContracts = create((set, get) => ({
   sealContract: (contractId) => {
     const now = new Date().toISOString();
     const contracts = get().contracts.map((c) =>
-      c.id === contractId ? { ...c, status: 'sealed', sealed_at: now } : c
+      c.id === contractId ? { ...c, status: 'sealed', sealedAt: now } : c
     );
     persist(contracts);
     set({ contracts, activeDoc: contracts.find((c) => c.id === contractId) ?? get().activeDoc });

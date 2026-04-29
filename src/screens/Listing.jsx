@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useListings } from '../store/useListings'
 import { useAuth } from '../store/useAuth'
+import { useContracts } from '../store/useContracts'
+import { generateContract } from '../lib/contracts'
 import { CATS, TAGS } from '../data/categories'
 
 // ── Design tokens ──────────────────────────────────────────────────────────
@@ -65,7 +67,9 @@ export default function Listing() {
   const setFilter   = useListings(s => s.setFilter)
   const toggleTag   = useListings(s => s.toggleFilterTag)
 
+  const saveContract  = useContracts(s => s.saveContract)
   const [reviews, setReviews] = useState([])
+  const [generating, setGenerating] = useState(false)
 
   useEffect(() => { if (!listings.length) loadListings() }, [listings.length, loadListings])
 
@@ -305,10 +309,35 @@ export default function Listing() {
             💬 Message
           </button>
           <button
-            onClick={() => navigate(`/contract/${listing.id}`)}
-            style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7, padding: 14, borderRadius: 14, border: 'none', background: acc, color: '#fff', fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: sans, transition: 'all 0.18s' }}
+            disabled={generating}
+            onClick={async () => {
+              if (generating || !user) return
+              setGenerating(true)
+              try {
+                const contractText = await generateContract(listing, user.name)
+                const doc = {
+                  id: Math.random().toString(36).slice(2, 12),
+                  listingId: listing.id,
+                  listingTitle: listing.title,
+                  contractText,
+                  status: 'pending',
+                  creatorEmail: user.email,
+                  creatorName: user.name,
+                  creatorColor: user.avatarColor,
+                  counterpartyEmail: listing.ownerEmail,
+                  counterpartyName: listing.ownerName,
+                  counterpartyColor: listing.ownerColor,
+                  createdAt: new Date().toISOString(),
+                }
+                saveContract(doc)
+                navigate(`/contract/${doc.id}`)
+              } catch {
+                setGenerating(false)
+              }
+            }}
+            style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7, padding: 14, borderRadius: 14, border: 'none', background: generating ? '#3a4a6a' : acc, color: '#fff', fontSize: 14, fontWeight: 600, cursor: generating ? 'default' : 'pointer', fontFamily: sans, transition: 'all 0.18s' }}
           >
-            Create contract →
+            {generating ? 'Generating…' : 'Create contract →'}
           </button>
         </div>
       )}
