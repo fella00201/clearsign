@@ -4,6 +4,7 @@ import { useListings } from '../store/useListings'
 import { useAuth } from '../store/useAuth'
 import { useContracts } from '../store/useContracts'
 import { generateContract } from '../lib/contracts'
+import { findThread, insertThread } from '../lib/supabase'
 import { CATS, TAGS } from '../data/categories'
 
 // ── Design tokens ──────────────────────────────────────────────────────────
@@ -107,8 +108,40 @@ export default function Listing() {
     navigate('/')
   }
 
-  function startMessage() {
+  async function startMessage() {
     if (!user) return
+    const UUID_RE = /^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/i
+
+    // Try Supabase when listing has a real UUID (inserted post-migration)
+    if (UUID_RE.test(listing.id ?? '')) {
+      try {
+        // Reuse existing thread if one already exists for this listing + pair
+        const existing = await findThread(listing.id, user.email, listing.ownerEmail)
+        if (existing) {
+          navigate(`/chat/${encodeURIComponent(existing.id)}`)
+          return
+        }
+        // Create a new thread in Supabase
+        const thread = await insertThread({
+          listingId:    listing.id,
+          listingTitle: listing.title,
+          p1:           user.email,
+          p1Id:         user.id,
+          p1Name:       user.name,
+          p1Color:      user.avatarColor,
+          p2:           listing.ownerEmail,
+          p2Id:         listing.ownerId,
+          p2Name:       listing.ownerName,
+          p2Color:      listing.ownerColor,
+        })
+        navigate(`/chat/${encodeURIComponent(thread.id)}`)
+        return
+      } catch (err) {
+        console.warn('[Supabase] startMessage failed:', err.message)
+      }
+    }
+
+    // localStorage fallback
     const tid = 'thread:' + [user.email, listing.ownerEmail].sort().join(':') + '::' + listing.id
     try {
       const all = JSON.parse(localStorage.getItem('cs_threads') || '[]')
