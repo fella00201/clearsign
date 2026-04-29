@@ -328,22 +328,23 @@ export async function findThread(listingId, userEmail, ownerEmail) {
  */
 export async function insertThread(thread) {
   const listing_id = UUID_RE.test(thread.listingId ?? '') ? thread.listingId : null;
-  const p1_id      = UUID_RE.test(thread.p1Id      ?? '') ? thread.p1Id      : null;
-  const p2_id      = UUID_RE.test(thread.p2Id      ?? '') ? thread.p2Id      : null;
 
   const { data, error } = await supabase
     .from('threads')
     .insert({
+      id:            thread.id,
       listing_id,
       listing_title: thread.listingTitle || null,
-      p1_id,
-      p1_name:  thread.p1Name  ?? '',
-      p1_color: thread.p1Color ?? '#5b8fff',
-      p1_email: thread.p1      ?? '',
-      p2_id,
-      p2_name:  thread.p2Name  ?? '',
-      p2_color: thread.p2Color ?? '#5b8fff',
-      p2_email: thread.p2      ?? '',
+      p1_id:         null,
+      p1_email:      thread.p1      ?? '',
+      p1_name:       thread.p1Name  ?? '',
+      p1_color:      thread.p1Color ?? '#5b8fff',
+      p2_id:         null,
+      p2_email:      thread.p2      ?? '',
+      p2_name:       thread.p2Name  ?? '',
+      p2_color:      thread.p2Color ?? '#5b8fff',
+      last_at:       new Date().toISOString(),
+      created_at:    thread.createdAt,
     })
     .select('*')
     .single();
@@ -372,17 +373,15 @@ export async function fetchMessages(threadId) {
  * @returns {Promise<Object>}
  */
 export async function insertMessage(message) {
-  const from_id = UUID_RE.test(message.fromId ?? '') ? message.fromId : null;
-
   const { data, error } = await supabase
     .from('messages')
     .insert({
       thread_id:  message.threadId,
-      from_id,
-      from_name:  message.fromName ?? '',
       from_email: message.from     ?? '',
+      from_name:  message.fromName ?? '',
       text:       message.text,
       read:       false,
+      created_at: new Date().toISOString(),
     })
     .select('*')
     .single();
