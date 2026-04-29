@@ -71,16 +71,18 @@ export default function Messages() {
   const navigate = useNavigate()
   const user     = useAuth(s => s.user)
   const [threads, setThreads] = useState([])
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     if (!user?.email) return
     let cancelled = false
+    setLoading(true)
 
     async function load() {
       // Try Supabase first
       try {
         const rows = await fetchThreads(user.email)
-        if (!cancelled) { setThreads(rows); return }
+        if (!cancelled) { setThreads(rows); setLoading(false); return }
       } catch {}
 
       // localStorage fallback
@@ -93,6 +95,7 @@ export default function Messages() {
       } catch {
         if (!cancelled) setThreads([])
       }
+      if (!cancelled) setLoading(false)
     }
 
     load()
@@ -114,7 +117,11 @@ export default function Messages() {
 
       {/* Thread list */}
       <div style={{ flex: 1, overflowY: 'auto', WebkitOverflowScrolling: 'touch' }}>
-        {threads.length > 0 ? threads.map(t => {
+        {loading ? (
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '50px 24px', color: t3, fontSize: 13 }}>
+            Loading…
+          </div>
+        ) : threads.length > 0 ? threads.map(t => {
           const other = t.p1 === user.email
             ? { name: t.p2Name, color: t.p2Color }
             : { name: t.p1Name, color: t.p1Color }
@@ -163,6 +170,7 @@ export default function Messages() {
           </div>
         )}
       </div>
+
 
       <NavBar active="messages" />
     </div>
