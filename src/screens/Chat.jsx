@@ -1,6 +1,12 @@
 import { useEffect, useRef, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useAuth } from '../store/useAuth'
+import {
+  fetchThreadById,
+  fetchMessages,
+  insertMessage,
+  updateThreadLastAt,
+} from '../lib/supabase'
 
 // ── Design tokens ──────────────────────────────────────────────────────────
 const bg   = '#0d0d11'
@@ -13,6 +19,8 @@ const acc  = '#5b8fff'
 const acc2 = '#3d6ee0'
 const sans = "'Inter', sans-serif"
 const serif = "'Sora', sans-serif"
+
+const UUID_RE = /^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/i
 
 function initials(name) {
   return name.split(' ').map(w => w[0] || '').slice(0, 2).join('').toUpperCase() || '?'
@@ -45,70 +53,113 @@ export default function Chat() {
   const navigate     = useNavigate()
   const user         = useAuth(s => s.user)
 
-  const [thread, setThread] = useState(null)
-  const [input, setInput]   = useState('')
+  const [thread, setThread]     = useState(null)
+  const [messages, setMessages] = useState([])
+  const [input, setInput]       = useState('')
 
   const scrollRef   = useRef(null)
   const textareaRef = useRef(null)
 
-  // Load + mark-read on mount / threadId change
+  // Load thread + messages on mount / threadId change
   useEffect(() => {
-    if (!threadId) return
-    try {
-      const decoded = decodeURIComponent(threadId)
-      const all     = JSON.parse(localStorage.getItem('cs_threads') || '[]')
-      const t       = all.find(x => x.id === decoded)
-      if (!t) return
+    if (!threadId || !user?.email) return
+    const decoded = decodeURIComponent(threadId)
+    let cancelled = false
 
-      let changed = false
-      ;(t.messages || []).forEach(m => {
-        if (m.from !== user?.email && !m.read) { m.read = true; changed = true }
-      })
-      if (changed) {
-        localStorage.setItem('cs_threads', JSON.stringify(all.map(x => x.id === decoded ? t : x)))
+    async function load() {
+      // Try Supabase if the ID looks like a UUID
+      if (UUID_RE.test(decoded)) {
+        try {
+          const [t, msgs] = await Promise.all([
+            fetchThreadById(decoded),
+            fetchMessages(decoded),
+          ])
+          if (!cancelled) { setThread(t); setMessages(msgs); return }
+        } catch {}
       }
-      setThread(t)
-    } catch {}
+
+      // localStorage fallback
+      try {
+        const all = JSON.parse(localStorage.getItem('cs_threads') || '[]')
+        const t = all.find(x => x.id === decoded)
+        if (!t || cancelled) return
+
+        let changed = false
+        ;(t.messages || []).forEach(m => {
+          if (m.from !== user.email && !m.read) { m.read = true; changed = true }
+        })
+        if (changed) {
+          localStorage.setItem('cs_threads', JSON.stringify(all.map(x => x.id === decoded ? t : x)))
+        }
+        setThread(t)
+        setMessages(t.messages || [])
+      } catch {}
+    }
+
+    load()
+    return () => { cancelled = true }
   }, [threadId, user?.email])
 
   // Auto-scroll to bottom whenever messages change
   useEffect(() => {
     if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight
-  }, [thread?.messages?.length])
+  }, [messages.length])
 
-  function sendMessage() {
+  async function sendMessage() {
     const txt = input.trim()
     if (!txt || !thread || !user) return
 
-    const msg = { id: uid(), from: user.email, text: txt, at: new Date().toISOString(), read: false }
-    const updated = { ...thread, messages: [...(thread.messages || []), msg], lastAt: msg.at }
+    const decoded = decodeURIComponent(threadId)
+    const msg = { id: uid(), from: user.email, fromName: user.name, text: txt, at: new Date().toISOString(), read: false }
 
-    setThread(updated)
+    // Optimistic update
+    setMessages(prev => [...prev, msg])
     setInput('')
-    if (textareaRef.current) {
-      textareaRef.current.style.height = 'auto'
+    if (textareaRef.current) textareaRef.current.style.height = 'auto'
+
+    // Try Supabase if thread ID is a UUID
+    if (UUID_RE.test(thread.id)) {
+      try {
+        await insertMessage({
+          threadId: thread.id,
+          fromId:   user.id,
+          from:     user.email,
+          fromName: user.name,
+          text:     txt,
+        })
+        await updateThreadLastAt(thread.id)
+        notifyOther(thread, user, msg, decoded)
+        return
+      } catch (err) {
+        console.warn('[Supabase] insertMessage failed:', err.message)
+      }
     }
 
-    // Persist thread
+    // localStorage fallback — `messages` is the pre-update closure value
+    const lsMsgs = [...messages, msg]
+    const updatedThread = { ...thread, messages: lsMsgs, lastAt: msg.at }
     try {
-      const decoded = decodeURIComponent(threadId)
-      const all     = JSON.parse(localStorage.getItem('cs_threads') || '[]')
-      const exists  = all.some(x => x.id === decoded)
-      const next    = exists ? all.map(x => x.id === decoded ? updated : x) : [...all, updated]
+      const all = JSON.parse(localStorage.getItem('cs_threads') || '[]')
+      const exists = all.some(x => x.id === decoded)
+      const next = exists
+        ? all.map(x => x.id === decoded ? updatedThread : x)
+        : [...all, updatedThread]
       localStorage.setItem('cs_threads', JSON.stringify(next))
     } catch {}
+    notifyOther(thread, user, msg, decoded)
+  }
 
-    // Notification for other party
+  function notifyOther(thread, user, msg, decodedThreadId) {
     const otherEmail = thread.p1 === user.email ? thread.p2 : thread.p1
     try {
-      const key      = `cs_notifs_${otherEmail}`
+      const key = `cs_notifs_${otherEmail}`
       const existing = JSON.parse(localStorage.getItem(key) || '[]')
-      const notif    = {
+      const notif = {
         id: uid(), type: 'message',
         title: `New message from ${user.name}`,
-        body: txt.slice(0, 60),
+        body: msg.text.slice(0, 60),
         at: msg.at, read: false,
-        threadId: decodeURIComponent(threadId),
+        threadId: decodedThreadId,
       }
       localStorage.setItem(key, JSON.stringify([notif, ...existing]))
     } catch {}
@@ -136,7 +187,6 @@ export default function Chat() {
   const other = thread.p1 === user?.email
     ? { name: thread.p2Name, color: thread.p2Color, email: thread.p2 }
     : { name: thread.p1Name, color: thread.p1Color, email: thread.p1 }
-  const msgs = thread.messages || []
 
   return (
     <div style={{ minHeight: '100svh', background: bg, display: 'flex', flexDirection: 'column', maxWidth: 480, margin: '0 auto', fontFamily: sans, fontSize: 15, color: text }}>
@@ -167,12 +217,12 @@ export default function Chat() {
         ref={scrollRef}
         style={{ flex: 1, overflowY: 'auto', WebkitOverflowScrolling: 'touch', padding: 14, display: 'flex', flexDirection: 'column', gap: 0 }}
       >
-        {msgs.length === 0 && (
+        {messages.length === 0 && (
           <div style={{ textAlign: 'center', padding: '30px 0', fontSize: 13, color: t3 }}>
             Start the conversation!
           </div>
         )}
-        {msgs.map(m => {
+        {messages.map(m => {
           const me = m.from === user?.email
           return (
             <div key={m.id} style={{ display: 'flex', flexDirection: 'column', alignItems: me ? 'flex-end' : 'flex-start' }}>
