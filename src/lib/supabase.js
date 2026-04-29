@@ -236,3 +236,168 @@ export async function updateContract(id, updates) {
 
   if (error) throw error;
 }
+
+// ── Threads & Messages ─────────────────────────────────────────────────────
+
+const UUID_RE = /^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/i;
+
+function mapThreadRow(row) {
+  return {
+    id:           row.id,
+    listingId:    row.listing_id    ?? null,
+    listingTitle: row.listing_title ?? '',
+    p1:           row.p1_email      ?? '',
+    p1Name:       row.p1_name       ?? '',
+    p1Color:      row.p1_color      ?? '#5b8fff',
+    p2:           row.p2_email      ?? '',
+    p2Name:       row.p2_name       ?? '',
+    p2Color:      row.p2_color      ?? '#5b8fff',
+    lastAt:       row.last_at,
+    createdAt:    row.created_at,
+  };
+}
+
+function mapMessageRow(row) {
+  return {
+    id:       row.id,
+    threadId: row.thread_id,
+    from:     row.from_email ?? '',
+    fromName: row.from_name  ?? '',
+    text:     row.text,
+    read:     row.read       ?? false,
+    at:       row.created_at,
+  };
+}
+
+/**
+ * Fetch all threads where the given email is p1 or p2, newest first.
+ * @param {string} userEmail
+ * @returns {Promise<Array>}
+ */
+export async function fetchThreads(userEmail) {
+  const { data, error } = await supabase
+    .from('threads')
+    .select('*')
+    .or(`p1_email.eq.${userEmail},p2_email.eq.${userEmail}`)
+    .order('last_at', { ascending: false });
+  if (error) throw error;
+  return (data ?? []).map(mapThreadRow);
+}
+
+/**
+ * Fetch a single thread by UUID.
+ * @param {string} threadId  Supabase UUID
+ * @returns {Promise<Object>}
+ */
+export async function fetchThreadById(threadId) {
+  const { data, error } = await supabase
+    .from('threads')
+    .select('*')
+    .eq('id', threadId)
+    .single();
+  if (error) throw error;
+  return mapThreadRow(data);
+}
+
+/**
+ * Find an existing thread for a listing between two participants.
+ * Returns null if not found.
+ * @param {string} listingId  UUID
+ * @param {string} userEmail
+ * @param {string} ownerEmail
+ * @returns {Promise<Object|null>}
+ */
+export async function findThread(listingId, userEmail, ownerEmail) {
+  const { data, error } = await supabase
+    .from('threads')
+    .select('*')
+    .eq('listing_id', listingId)
+    .or(
+      `and(p1_email.eq.${userEmail},p2_email.eq.${ownerEmail}),` +
+      `and(p2_email.eq.${userEmail},p1_email.eq.${ownerEmail})`
+    )
+    .maybeSingle();
+  if (error) throw error;
+  return data ? mapThreadRow(data) : null;
+}
+
+/**
+ * Insert a new thread and return the saved row.
+ * @param {Object} thread  app-shaped thread object
+ * @returns {Promise<Object>}
+ */
+export async function insertThread(thread) {
+  const listing_id = UUID_RE.test(thread.listingId ?? '') ? thread.listingId : null;
+  const p1_id      = UUID_RE.test(thread.p1Id      ?? '') ? thread.p1Id      : null;
+  const p2_id      = UUID_RE.test(thread.p2Id      ?? '') ? thread.p2Id      : null;
+
+  const { data, error } = await supabase
+    .from('threads')
+    .insert({
+      listing_id,
+      listing_title: thread.listingTitle || null,
+      p1_id,
+      p1_name:  thread.p1Name  ?? '',
+      p1_color: thread.p1Color ?? '#5b8fff',
+      p1_email: thread.p1      ?? '',
+      p2_id,
+      p2_name:  thread.p2Name  ?? '',
+      p2_color: thread.p2Color ?? '#5b8fff',
+      p2_email: thread.p2      ?? '',
+    })
+    .select('*')
+    .single();
+  if (error) throw error;
+  return mapThreadRow(data);
+}
+
+/**
+ * Fetch all messages for a thread, oldest first.
+ * @param {string} threadId  Supabase UUID
+ * @returns {Promise<Array>}
+ */
+export async function fetchMessages(threadId) {
+  const { data, error } = await supabase
+    .from('messages')
+    .select('*')
+    .eq('thread_id', threadId)
+    .order('created_at', { ascending: true });
+  if (error) throw error;
+  return (data ?? []).map(mapMessageRow);
+}
+
+/**
+ * Insert a message and return the saved row.
+ * @param {Object} message  app-shaped message object
+ * @returns {Promise<Object>}
+ */
+export async function insertMessage(message) {
+  const from_id = UUID_RE.test(message.fromId ?? '') ? message.fromId : null;
+
+  const { data, error } = await supabase
+    .from('messages')
+    .insert({
+      thread_id:  message.threadId,
+      from_id,
+      from_name:  message.fromName ?? '',
+      from_email: message.from     ?? '',
+      text:       message.text,
+      read:       false,
+    })
+    .select('*')
+    .single();
+  if (error) throw error;
+  return mapMessageRow(data);
+}
+
+/**
+ * Bump last_at on a thread to now (call after inserting a message).
+ * @param {string} threadId  Supabase UUID
+ */
+export async function updateThreadLastAt(threadId) {
+  const { error } = await supabase
+    .from('threads')
+    .update({ last_at: new Date().toISOString() })
+    .eq('id', threadId);
+  if (error) throw error;
+}
