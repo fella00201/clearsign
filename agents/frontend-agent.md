@@ -1,37 +1,56 @@
 # ClearSign — Frontend Agent
 
-You are the frontend specialist agent for ClearSign. You own everything inside `src/screens/`, `src/components/`, and `src/store/`.
+You own `src/screens/`, `src/components/`, and `src/store/`.
 
-## Your responsibilities
-- Build and modify React screens and components
-- Maintain the design system (dark theme, CSS variables, Fraunces + Instrument Sans fonts)
-- Ensure all layouts work on mobile (375px), tablet (768px), and desktop
-- Keep the PWA working (service worker, manifest, offline support)
-- Use Tailwind utility classes only — no custom CSS unless absolutely necessary
-- Use Zustand for state — never useState for data that needs to persist across screens
+## Stack
+- React 18 + Vite
+- React Router v6 for navigation
+- Zustand for state (useAuth, useListings, useContracts)
+- Inline styles using design tokens (no Tailwind yet)
 
-## Design rules you must follow
-- Background colors: bg-[#0d0d11] (primary), bg-[#141418] (cards), bg-[#1e1e26] (inputs)
-- Accent: #5b8fff (blue), #3ecf7a (green for success), #ff5b5b (red for errors)
-- Font: Fraunces (serif, for headings/logo), Instrument Sans (sans, for everything else)
-- Border radius: 14px for cards, 8px for inputs and buttons
-- Never use hardcoded hex in JSX — use CSS variables or Tailwind config values
-- All tap targets must be at least 44px tall on mobile
-
-## How to approach a task
-1. Read the existing file(s) before writing anything
-2. Make the smallest change that achieves the goal
-3. Check that the component renders on a 375px screen
-4. Export a named component, not a default anonymous arrow function
-5. Add a JSDoc comment describing what the component does
-
-## Component template
-```jsx
-/**
- * ListingCard — displays a single marketplace listing with tags, price, and owner info.
- * Used in: Discover.jsx, Profile.jsx
- */
-export function ListingCard({ listing, onPress }) {
-  // ...
-}
+## Design tokens — use these exact values
+```js
+const bg    = '#0d0d11'   // page background
+const bg2   = '#141418'   // card background
+const bg3   = '#1e1e26'   // input background
+const bg4   = '#27272f'   // subtle surface
+const bdr   = '#2a2a36'   // border
+const bdr2  = '#3a3a4c'   // hover border
+const text  = '#eeedf5'   // primary text
+const t2    = '#9896b2'   // secondary text
+const t3    = '#56546c'   // tertiary text
+const acc   = '#5b8fff'   // accent blue
+const acc2  = '#3d6ee0'   // accent blue hover
+const accbg = '#141f3c'   // accent background
+const green = '#3ecf7a'   // success green
+const amber = '#f5a623'   // warning amber
+const red   = '#ff5b5b'   // error red
+const serif = "'Fraunces', serif"
+const sans  = "'Instrument Sans', sans-serif"
 ```
+
+## Rules
+- Read the file before editing it
+- Match the existing component style exactly — same token names, same border radius (14px cards, 8px inputs)
+- All tap targets must be at least 44px tall
+- Every screen needs a top bar and either a NavBar or back button
+- Use `useMemo` for computed/filtered data — never put computed values in Zustand
+- Use `useEffect` only for side effects (loading data, subscriptions)
+- Export named components, not anonymous arrow functions
+- Add a JSDoc comment describing what each component does
+
+## Zustand pattern
+```js
+// Correct — stable primitive selectors
+const listings  = useListings(s => s.listings)
+const searchQ   = useListings(s => s.searchQ)
+
+// Correct — computed with useMemo
+const filtered = useMemo(() => listings.filter(...), [listings, searchQ])
+
+// WRONG — causes infinite loop
+const filtered = useListings(s => s.getFiltered())
+```
+
+## NavBar
+Import from `src/components/NavBar.jsx`. Pass `active` prop matching the tab name: `find`, `messages`, `post`, `vault`, `profile`.

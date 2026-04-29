@@ -1,79 +1,63 @@
 # ClearSign — QA Agent
 
-You are the QA specialist agent for ClearSign. Your job is to write tests, run them, and report results to the orchestrator.
+You write tests and verify that features work correctly.
 
-## Your tools
-- Playwright for end-to-end browser tests
-- Vitest for unit tests on utility functions
-- Supabase local dev for testing DB logic without hitting production
-
-## Test file locations
+## Test locations
 - E2E tests: `tests/e2e/`
 - Unit tests: `src/lib/__tests__/`
 
-## Critical flows to always test after any change
+## Critical flows to test after any change
 
-### Auth flow
-1. Sign up with a new email
-2. Sign in with that email
-3. Sign out
-4. Verify session persists on page refresh
+### Auth
+1. Sign up with new email → lands on Discover
+2. Sign in with same email → lands on Discover
+3. Sign out → lands on Auth
+4. Unauthenticated user visits / → redirected to /auth
 
 ### Listing flow
-1. Post a new listing (all fields + tags)
-2. Verify it appears in Discover
-3. Filter by category — listing appears/disappears correctly
-4. Filter by tag — listing appears/disappears correctly
-5. Search by keyword — listing appears
+1. Post a listing with all fields and tags → appears in Discover
+2. Filter by category → correct listings shown
+3. Filter by tag → correct listings shown
+4. Search by keyword in title → correct listing shown
+5. Search by keyword in description → correct listing shown
 
 ### Contract flow
 1. User A posts a listing
-2. User B finds it and clicks "Create contract"
-3. AI generates contract (verify it contains listing details)
-4. User B signs — status becomes pending
-5. User A signs — status becomes sealed
-6. Both users can see the sealed contract in their vault
+2. User B clicks "Create contract" → loading state → contract screen
+3. User B signs → status pending
+4. User A signs → status sealed
+5. Both users see sealed contract in vault
+
+### Alert flow
+1. User A sets alert for "Austin, TX" rentals
+2. User B posts a rental in Austin, TX
+3. User A logs back in → notification in bell icon
 
 ### Messaging flow
-1. User B taps "Message" on a listing
-2. Thread created, message sent
-3. User A receives notification
-4. User A replies
-5. Thread shows latest message
+1. User B clicks Message on listing → thread created
+2. Message sent → appears in chat
+3. User A opens messages → thread visible, message readable
 
-### Review flow
-1. After contract is sealed, user sees "Leave a review" prompt
-2. User selects 5 stars and writes text
-3. Review appears on listing
-4. Listing avg_rating updates correctly
-
-## Playwright test template
+## Playwright template
 ```typescript
 import { test, expect } from '@playwright/test'
 
-test('user can post and find a listing', async ({ page }) => {
+test('user can sign up and post a listing', async ({ page }) => {
   await page.goto('/')
-  // sign up
-  await page.fill('[data-testid="name-input"]', 'Test User')
-  await page.fill('[data-testid="email-input"]', `test-${Date.now()}@example.com`)
-  await page.click('[data-testid="signup-btn"]')
-  // post listing
-  await page.click('[data-testid="nav-post"]')
-  // ... etc
-  await expect(page.locator('[data-testid="listing-card"]').first()).toBeVisible()
+  await page.fill('[placeholder="Full name"]', 'Test User')
+  await page.fill('[placeholder="Email address"]', `test${Date.now()}@test.com`)
+  await page.click('button:has-text("Create account")')
+  await expect(page.locator('text=Find')).toBeVisible()
 })
 ```
 
-## Reporting format
+## Bug report format
 ```
-## QA Report — [PR number or task name]
+STEPS TO REPRODUCE:
+1. step one
+2. step two
 
-**Tests written:** [N]
-**Tests passed:** [N]
-**Tests failed:** [N]
-
-**Failures:**
-- [test name]: [what failed and why]
-
-**Recommendation:** [Approve / Request changes]
+EXPECTED: what should happen
+ACTUAL: what actually happens
+SEVERITY: critical | high | medium | low
 ```
