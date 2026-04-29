@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../store/useAuth'
+import { fetchThreads } from '../lib/supabase'
 
 // ── Design tokens ──────────────────────────────────────────────────────────
 const bg   = '#0d0d11'
@@ -73,15 +74,29 @@ export default function Messages() {
 
   useEffect(() => {
     if (!user?.email) return
-    try {
-      const all = JSON.parse(localStorage.getItem('cs_threads') || '[]')
-      const mine = all
-        .filter(t => t.p1 === user.email || t.p2 === user.email)
-        .sort((a, b) => new Date(b.lastAt || b.createdAt) - new Date(a.lastAt || a.createdAt))
-      setThreads(mine)
-    } catch {
-      setThreads([])
+    let cancelled = false
+
+    async function load() {
+      // Try Supabase first
+      try {
+        const rows = await fetchThreads(user.email)
+        if (!cancelled) { setThreads(rows); return }
+      } catch {}
+
+      // localStorage fallback
+      try {
+        const all = JSON.parse(localStorage.getItem('cs_threads') || '[]')
+        const mine = all
+          .filter(t => t.p1 === user.email || t.p2 === user.email)
+          .sort((a, b) => new Date(b.lastAt || b.createdAt) - new Date(a.lastAt || a.createdAt))
+        if (!cancelled) setThreads(mine)
+      } catch {
+        if (!cancelled) setThreads([])
+      }
     }
+
+    load()
+    return () => { cancelled = true }
   }, [user?.email])
 
   return (
@@ -103,10 +118,12 @@ export default function Messages() {
           const other = t.p1 === user.email
             ? { name: t.p2Name, color: t.p2Color }
             : { name: t.p1Name, color: t.p1Color }
-          const msgs   = t.messages || []
-          const last   = msgs[msgs.length - 1]
-          const unread = last && last.from !== user.email && !last.read
+          // localStorage threads embed messages; Supabase threads do not
+          const msgs    = t.messages || []
+          const last    = msgs[msgs.length - 1]
+          const unread  = last && last.from !== user.email && !last.read
           const preview = t.listingTitle ? `Re: ${t.listingTitle}` : last ? last.text : 'New chat'
+          const timeStr = last ? fmtTime(last.at) : (t.lastAt ? fmtTime(t.lastAt) : '')
 
           return (
             <div
@@ -128,7 +145,7 @@ export default function Messages() {
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 2 }}>
                   <div style={{ fontSize: 14, fontWeight: unread ? 700 : 500, color: text }}>{other.name}</div>
-                  <div style={{ fontSize: 11, color: t3 }}>{last ? fmtTime(last.at) : ''}</div>
+                  <div style={{ fontSize: 11, color: t3 }}>{timeStr}</div>
                 </div>
                 <div style={{ fontSize: 12, color: t2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 220 }}>
                   {preview}
