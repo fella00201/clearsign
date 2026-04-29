@@ -7,11 +7,12 @@ on:
     types: [opened, synchronize]
 
 jobs:
-  # ── Runs when a new Issue is opened ──────────────────────
+  # ── ORCHESTRATOR — runs when a new Issue is opened ───────
   orchestrate:
-    name: Orchestrator — plan and route
+    name: Orchestrator agent
     runs-on: ubuntu-latest
     if: github.event_name == 'issues' && github.event.action == 'opened'
+    timeout-minutes: 15
     permissions:
       issues: write
       contents: write
@@ -19,35 +20,80 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
       - name: Install Claude Code
         run: npm install -g @anthropic-ai/claude-code
 
-      - name: Run orchestrator on issue
+      - name: Configure git
+        run: |
+          git config user.name "ClearSign Orchestrator"
+          git config user.email "agent@clearsign.app"
+
+      - name: Run orchestrator
+        id: agent
+        continue-on-error: true
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          ISSUE_TITLE="${{ github.event.issue.title }}"
-          ISSUE_BODY="${{ github.event.issue.body }}"
           ISSUE_NUMBER="${{ github.event.issue.number }}"
+          ISSUE_TITLE="${{ github.event.issue.title }}"
+          ISSUE_BODY=$(cat << 'ISSUEBODY'
+          ${{ github.event.issue.body }}
+          ISSUEBODY
+          )
 
           claude --system-prompt "$(cat agents/orchestrator.md)" \
             --print \
-            "New GitHub Issue #${ISSUE_NUMBER}: ${ISSUE_TITLE}
+            "GitHub Issue #${ISSUE_NUMBER}: ${ISSUE_TITLE}
 
           ${ISSUE_BODY}
 
-          Read the codebase, make a plan, implement the changes, then open a pull request. 
-          Reference issue #${ISSUE_NUMBER} in the PR." \
+          Instructions:
+          1. Read CLAUDE.md first
+          2. Estimate the scope (small/medium/large)
+          3. If large (6+ files), comment on the issue with a breakdown and only implement the first subtask
+          4. Commit after every file you write
+          5. Run npm run build to verify
+          6. Open a pull request referencing #${ISSUE_NUMBER}
+          7. If you run out of tokens, commit what is done and comment on the issue" \
             > agent-output.txt 2>&1
 
+          echo "Agent output:"
           cat agent-output.txt
 
-  # ── Runs on every PR — security audit ────────────────────
+      - name: Comment on issue if agent ran
+        if: always()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs')
+            let output = ''
+            try {
+              output = fs.readFileSync('agent-output.txt', 'utf8').slice(0, 4000)
+            } catch {
+              output = 'Agent did not produce output'
+            }
+            github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: ${{ github.event.issue.number }},
+              body: `## 🤖 Orchestrator Agent\n\n${output}`
+            })
+
+  # ── SECURITY REVIEW — runs on every PR ───────────────────
   security-review:
-    name: Security agent — audit PR
+    name: Security agent
     runs-on: ubuntu-latest
     if: github.event_name == 'pull_request'
+    timeout-minutes: 5
     permissions:
       pull-requests: write
       contents: read
@@ -59,43 +105,41 @@ jobs:
       - name: Install Claude Code
         run: npm install -g @anthropic-ai/claude-code
 
-      - name: Get PR diff
+      - name: Get diff
         run: git diff origin/main...HEAD > pr-diff.txt
 
       - name: Run security agent
+        continue-on-error: true
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
         run: |
           claude --system-prompt "$(cat agents/security-agent.md)" \
             --print \
-            "Review this pull request diff for security issues:
+            "Review this PR diff for security issues. Be concise.
 
-          $(cat pr-diff.txt)
-
-          List all security issues found with severity ratings.
-          If no issues found, say VERDICT: approve" \
+          $(cat pr-diff.txt | head -500)" \
             > security-output.txt 2>&1
 
-          cat security-output.txt
-
-      - name: Post security review as PR comment
+      - name: Post security comment
         uses: actions/github-script@v7
         with:
           script: |
             const fs = require('fs')
-            const output = fs.readFileSync('security-output.txt', 'utf8')
+            let output = 'No output'
+            try { output = fs.readFileSync('security-output.txt', 'utf8').slice(0, 2000) } catch {}
             github.rest.issues.createComment({
               owner: context.repo.owner,
               repo: context.repo.repo,
               issue_number: context.payload.pull_request.number,
-              body: `## 🔒 Security Agent Review\n\n\`\`\`\n${output.slice(0, 3000)}\n\`\`\``
+              body: `## 🔒 Security Agent\n\n${output}`
             })
 
-  # ── Runs on every PR — code review ───────────────────────
+  # ── CODE REVIEW — runs on every PR ───────────────────────
   code-review:
-    name: Review agent — code quality
+    name: Review agent
     runs-on: ubuntu-latest
     if: github.event_name == 'pull_request'
+    timeout-minutes: 5
     permissions:
       pull-requests: write
       contents: read
@@ -107,31 +151,49 @@ jobs:
       - name: Install Claude Code
         run: npm install -g @anthropic-ai/claude-code
 
-      - name: Get PR diff
+      - name: Get diff
         run: git diff origin/main...HEAD > pr-diff.txt
 
       - name: Run review agent
+        continue-on-error: true
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
         run: |
           claude --system-prompt "$(cat agents/review-agent.md)" \
             --print \
-            "Review this pull request for code quality, performance and accessibility:
+            "Review this PR for code quality, performance and accessibility. Be concise.
 
-          $(cat pr-diff.txt)" \
+          $(cat pr-diff.txt | head -500)" \
             > review-output.txt 2>&1
 
-          cat review-output.txt
-
-      - name: Post code review as PR comment
+      - name: Post review comment
         uses: actions/github-script@v7
         with:
           script: |
             const fs = require('fs')
-            const output = fs.readFileSync('review-output.txt', 'utf8')
+            let output = 'No output'
+            try { output = fs.readFileSync('review-output.txt', 'utf8').slice(0, 2000) } catch {}
             github.rest.issues.createComment({
               owner: context.repo.owner,
               repo: context.repo.repo,
               issue_number: context.payload.pull_request.number,
-              body: `## 🔍 Review Agent\n\n\`\`\`\n${output.slice(0, 3000)}\n\`\`\``
+              body: `## 🔍 Review Agent\n\n${output}`
             })
+
+  # ── BUILD CHECK — runs on every PR ───────────────────────
+  build:
+    name: Build check
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    env:
+      VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+      VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+      VITE_ANTHROPIC_API_KEY: ${{ secrets.VITE_ANTHROPIC_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      - run: npm ci
+      - run: npm run build
