@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useAuth } from '../store/useAuth'
 import {
+  supabase,
   fetchThreadById,
   fetchMessages,
   insertMessage,
@@ -104,6 +105,39 @@ export default function Chat() {
   useEffect(() => {
     if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight
   }, [messages.length])
+
+  // Realtime subscription — append incoming messages from the other party
+  useEffect(() => {
+    if (!threadId || !user?.email) return
+    const decoded = decodeURIComponent(threadId)
+    if (!UUID_RE.test(decoded)) return  // only for Supabase threads
+
+    const channel = supabase
+      .channel('messages-' + decoded)
+      .on('postgres_changes', {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'messages',
+        filter: 'thread_id=eq.' + decoded,
+      }, payload => {
+        const row = payload.new
+        // Skip messages sent by this user (already added optimistically)
+        if (row.from_email !== user.email) {
+          setMessages(prev => [...prev, {
+            id:       row.id,
+            threadId: row.thread_id,
+            from:     row.from_email  ?? '',
+            fromName: row.from_name   ?? '',
+            text:     row.text,
+            read:     false,
+            at:       row.created_at,
+          }])
+        }
+      })
+      .subscribe()
+
+    return () => supabase.removeChannel(channel)
+  }, [threadId, user?.email])
 
   async function sendMessage() {
     const txt = input.trim()
