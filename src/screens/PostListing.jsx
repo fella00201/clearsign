@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useListings } from '../store/useListings'
 import { useAuth } from '../store/useAuth'
 import { CATS, TAGS } from '../data/categories'
+import { supabase } from '../lib/supabase'
 
 // ── Design tokens ──────────────────────────────────────────────────────────
 const bg    = '#0d0d11'
@@ -178,36 +179,69 @@ function Field({ fieldKey, meta, value, onChange }) {
   )
 }
 
-function fireAlerts(listing) {
+function alertMatches(alerts, listing) {
+  return (alerts ?? []).some(al => {
+    const locMatch = !al.location ||
+      listing.location.toLowerCase().includes(al.location.toLowerCase())
+    const catMatch = !al.cat || al.cat === 'all' || al.cat === listing.cat
+    return locMatch && catMatch
+  })
+}
+
+async function fireAlerts(listing) {
+  // ── 1. localStorage path (keeps legacy users who never signed up in Supabase) ──
   try {
-    const profileKeys = Object.keys(localStorage).filter(k => k.startsWith('cs_profile_'))
-    profileKeys.forEach(key => {
-      try {
-        const user = JSON.parse(localStorage.getItem(key))
-        if (!user || !user.alerts || user.email === listing.ownerEmail) return
-        const matched = user.alerts.some(alert => {
-          const locMatch = !alert.location ||
-            listing.location.toLowerCase().includes(alert.location.toLowerCase())
-          const catMatch = !alert.cat || alert.cat === 'all' || alert.cat === listing.cat
-          return locMatch && catMatch
-        })
-        if (matched) {
-          const notifKey = `cs_notifs_${user.email}`
+    Object.keys(localStorage)
+      .filter(k => k.startsWith('cs_profile_'))
+      .forEach(key => {
+        try {
+          const u = JSON.parse(localStorage.getItem(key))
+          if (!u?.alerts || u.email === listing.ownerEmail) return
+          if (!alertMatches(u.alerts, listing)) return
+          const notifKey = `cs_notifs_${u.email}`
           const existing = JSON.parse(localStorage.getItem(notifKey) || '[]')
-          const notif = {
-            id: Math.random().toString(36).slice(2, 10),
-            type: 'alert_match',
-            title: 'New listing near you!',
-            body: listing.title + ' in ' + listing.location,
-            at: new Date().toISOString(),
-            read: false,
+          localStorage.setItem(notifKey, JSON.stringify([{
+            id:        Math.random().toString(36).slice(2, 10),
+            type:      'alert_match',
+            title:     'New listing near you!',
+            body:      `${listing.title} in ${listing.location}`,
+            at:        new Date().toISOString(),
+            read:      false,
             listingId: listing.id,
-          }
-          localStorage.setItem(notifKey, JSON.stringify([notif, ...existing]))
-        }
-      } catch {}
-    })
+          }, ...existing]))
+        } catch {}
+      })
   } catch {}
+
+  // ── 2. Supabase path — read users table, insert notifications rows ────────
+  try {
+    const { data: sbUsers, error } = await supabase
+      .from('users')
+      .select('id, email, alerts')
+      .neq('email', listing.ownerEmail)
+
+    if (error || !sbUsers?.length) return
+
+    const notifRows = sbUsers
+      .filter(u => alertMatches(u.alerts, listing))
+      .map(u => ({
+        user_id:    u.id,
+        type:       'alert_match',
+        title:      'New listing near you!',
+        body:       `${listing.title} in ${listing.location}`,
+        // listing not yet in Supabase with its UUID at this point — set null.
+        listing_id: null,
+      }))
+
+    if (notifRows.length) {
+      const { error: nErr } = await supabase
+        .from('notifications')
+        .insert(notifRows)
+      if (nErr) console.warn('[Supabase] notification insert failed:', nErr.message)
+    }
+  } catch (err) {
+    console.warn('[Supabase] fireAlerts failed:', err.message)
+  }
 }
 
 // ── Main screen ────────────────────────────────────────────────────────────
@@ -255,21 +289,22 @@ export default function PostListing() {
     const fields = LISTING_FIELDS[subtype] || ['title', 'location', 'description']
     const id = Math.random().toString(36).slice(2, 10)
     const listing = {
-      id,
+      id,           // temporary local id; replaced by Supabase UUID after insert
       ...Object.fromEntries(fields.map(f => [f, answers[f]?.trim() || ''])),
       cat,
-      subcat: subtype,
-      tags: selectedTags,
-      ownerName: user.name,
+      subcat:     subtype,
+      tags:       selectedTags,
+      ownerName:  user.name,
       ownerEmail: user.email,
       ownerColor: user.avatarColor,
-      createdAt: new Date().toISOString(),
-      status: 'active',
+      ownerId:    user.id,  // UUID (crypto.randomUUID()) for Supabase FK
+      createdAt:  new Date().toISOString(),
+      status:     'active',
       reviewCount: 0,
-      avgRating: 0,
+      avgRating:   0,
     }
-    addListing(listing)
-    fireAlerts(listing)
+    addListing(listing)         // optimistic + async Supabase insert
+    fireAlerts(listing)         // async, fire-and-forget notification fan-out
     navigate('/')
   }
 
