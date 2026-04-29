@@ -143,3 +143,96 @@ export async function insertListing(listing) {
 
   return result;
 }
+
+// ── Contracts ──────────────────────────────────────────────────────────────
+
+/**
+ * Map a contracts table row (snake_case) to the app's camelCase shape.
+ * Sig image blobs are intentionally excluded — kept only in localStorage.
+ */
+function mapContractRow(row) {
+  return {
+    id:                   row.id,
+    listingId:            row.listing_id            ?? null,
+    listingTitle:         row.listing_title          ?? '',
+    contractText:         row.contract_text          ?? '',
+    creatorName:          row.creator_name           ?? '',
+    creatorEmail:         row.creator_email          ?? '',
+    creatorColor:         row.creator_color          ?? '#5b8fff',
+    creatorSignedAt:      row.creator_signed_at      ?? null,
+    counterpartyName:     row.counterparty_name      ?? '',
+    counterpartyEmail:    row.counterparty_email     ?? '',
+    counterpartyColor:    row.counterparty_color     ?? '#5b8fff',
+    counterpartySignedAt: row.counterparty_signed_at ?? null,
+    status:               row.status,
+    createdAt:            row.created_at,
+    sealedAt:             row.sealed_at              ?? null,
+  };
+}
+
+/**
+ * Fetch all contracts where the given email is creator or counterparty.
+ * @param {string} userEmail
+ * @returns {Promise<Array>}  contracts in app shape, newest first
+ */
+export async function fetchContracts(userEmail) {
+  const { data, error } = await supabase
+    .from('contracts')
+    .select('*')
+    .or(`creator_email.eq.${userEmail},counterparty_email.eq.${userEmail}`)
+    .order('created_at', { ascending: false });
+
+  if (error) throw error;
+  return (data ?? []).map(mapContractRow);
+}
+
+/**
+ * Insert a new contract into Supabase and return the saved row.
+ * Sig data (base64 PNGs) is intentionally not stored — stays in localStorage.
+ *
+ * @param {Object} doc  app-shaped contract doc
+ * @returns {Promise<Object>}  saved contract in app shape (Supabase UUID as id)
+ */
+export async function insertContract(doc) {
+  const { data, error } = await supabase
+    .from('contracts')
+    .insert({
+      listing_id:        doc.listingId        ?? null,
+      listing_title:     doc.listingTitle      ?? '',
+      contract_text:     doc.contractText      ?? '',
+      creator_name:      doc.creatorName       ?? '',
+      creator_email:     doc.creatorEmail      ?? '',
+      creator_color:     doc.creatorColor      ?? '#5b8fff',
+      counterparty_name:  doc.counterpartyName  ?? '',
+      counterparty_email: doc.counterpartyEmail ?? '',
+      counterparty_color: doc.counterpartyColor ?? '#5b8fff',
+      status:            doc.status            ?? 'pending',
+    })
+    .select('*')
+    .single();
+
+  if (error) throw error;
+  return mapContractRow(data);
+}
+
+/**
+ * Update a contract row (e.g. to record a signature or seal).
+ * Pass only the camelCase fields you want to change; they are mapped to snake_case.
+ *
+ * @param {string} id      Supabase UUID of the contract
+ * @param {Object} updates  camelCase fields to update
+ */
+export async function updateContract(id, updates) {
+  const mapped = {};
+  if (updates.status               !== undefined) mapped.status                 = updates.status;
+  if (updates.creatorSignedAt      !== undefined) mapped.creator_signed_at      = updates.creatorSignedAt;
+  if (updates.counterpartySignedAt !== undefined) mapped.counterparty_signed_at = updates.counterpartySignedAt;
+  if (updates.sealedAt             !== undefined) mapped.sealed_at              = updates.sealedAt;
+
+  const { error } = await supabase
+    .from('contracts')
+    .update(mapped)
+    .eq('id', id);
+
+  if (error) throw error;
+}
