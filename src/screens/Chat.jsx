@@ -293,6 +293,7 @@ export default function Chat() {
           at: new Date().toISOString(),
           read: false,
           contractId: saved.id,
+          listingId: listing.id,
         }
         localStorage.setItem(notifKey, JSON.stringify([notif, ...existing]))
       } catch {}
@@ -318,7 +319,12 @@ export default function Chat() {
           <div>
             <div style={{ fontSize: 14, fontWeight: 600, color: text }}>{other.name}</div>
             {thread.listingTitle && (
-              <div style={{ fontSize: 11, color: t2 }}>Re: {thread.listingTitle}</div>
+              <div
+                onClick={thread.listingId ? e => { e.stopPropagation(); navigate(`/listing/${thread.listingId}`) } : undefined}
+                style={{ fontSize: 11, color: thread.listingId ? acc : t2, cursor: thread.listingId ? 'pointer' : 'default' }}
+              >
+                Re: {thread.listingTitle}
+              </div>
             )}
           </div>
         </div>
