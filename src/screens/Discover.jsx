@@ -100,8 +100,8 @@ function ListingCard({ listing, onNavigate }) {
     <div
       onClick={() => onNavigate(`/listing/${listing.id}`)}
       style={{ background: bg2, border: `1px solid ${bdr}`, borderRadius: 14, padding: 16, cursor: 'pointer', transition: 'all 0.18s ease', display: 'flex', flexDirection: 'column' }}
-      onMouseEnter={e => { e.currentTarget.style.borderColor = bdr2; e.currentTarget.style.background = bg3 }}
-      onMouseLeave={e => { e.currentTarget.style.borderColor = bdr;  e.currentTarget.style.background = bg2 }}
+      onMouseEnter={e => { e.currentTarget.style.borderColor = bdr2; e.currentTarget.style.background = bg3; e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 8px 24px rgba(0,0,0,0.32)' }}
+      onMouseLeave={e => { e.currentTarget.style.borderColor = bdr; e.currentTarget.style.background = bg2; e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = 'none' }}
     >
       {/* Badge + price */}
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 8 }}>
@@ -290,17 +290,23 @@ export default function Discover() {
     : ALL_POPULAR_TAGS
 
   const noAlerts = user && (!user.alerts || !user.alerts.length)
+  const [searchFocused, setSearchFocused] = useState(false)
 
   // ── Shared search bar ──────────────────────────────────────────────────
   const searchBar = (
-    <div style={{
-      display: 'flex', alignItems: 'center', gap: 8,
-      background: bg3, border: `1px solid ${bdr}`,
-      borderRadius: 8, padding: '10px 13px',
-    }}>
+    <div
+      onFocus={() => setSearchFocused(true)}
+      onBlur={() => setSearchFocused(false)}
+      style={{
+        display: 'flex', alignItems: 'center', gap: 8,
+        background: bg3, border: `1px solid ${searchFocused ? acc : bdr}`,
+        borderRadius: 8, padding: '10px 13px',
+        transition: 'border-color 0.18s',
+      }}
+    >
       <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style={{ flexShrink: 0 }}>
-        <circle cx="6.5" cy="6.5" r="4.5" stroke={t3} strokeWidth="1.3" />
-        <path d="M10 10l3 3" stroke={t3} strokeWidth="1.3" strokeLinecap="round" />
+        <circle cx="6.5" cy="6.5" r="4.5" stroke={searchFocused ? acc : t3} strokeWidth="1.3" />
+        <path d="M10 10l3 3" stroke={searchFocused ? acc : t3} strokeWidth="1.3" strokeLinecap="round" />
       </svg>
       <input
         type="text"
@@ -341,22 +347,23 @@ export default function Discover() {
   ) : null
 
   // ── Empty state ────────────────────────────────────────────────────────
+  const hasFilters = searchQ || filterTags.length > 0
   const emptyState = (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '50px 24px', textAlign: 'center', gap: 10 }}>
-      <div style={{ fontSize: 36, marginBottom: 6 }}>🔍</div>
+      <div style={{ fontSize: 48, marginBottom: 4 }}>🔍</div>
       <h3 style={{ fontFamily: serif, fontSize: 20, fontWeight: 400, color: text, margin: 0 }}>No listings found</h3>
-      <p style={{ fontSize: 13, color: t2, maxWidth: 240, lineHeight: 1.6, margin: 0 }}>
-        {searchQ || filterTags.length
-          ? 'Try different keywords or clear the tag filters.'
+      <p style={{ fontSize: 13, color: t2, maxWidth: 260, lineHeight: 1.6, margin: 0 }}>
+        {hasFilters
+          ? 'No listings match your filters — try different keywords or clear all filters.'
           : 'No listings yet. Be the first to post!'}
       </p>
-      {filterTags.length > 0 && (
-        <button onClick={clearTags} style={{
-          marginTop: 8, padding: '8px 14px', fontSize: 12, borderRadius: 8,
+      {hasFilters && (
+        <button onClick={() => { clearTags(); setSearch('') }} style={{
+          marginTop: 8, padding: '9px 18px', fontSize: 12, borderRadius: 8,
           border: `1px solid ${bdr}`, background: bg3, color: text,
           cursor: 'pointer', fontFamily: sans, fontWeight: 600,
         }}>
-          Clear tag filters
+          Clear all filters
         </button>
       )}
     </div>
@@ -518,14 +525,17 @@ export default function Discover() {
               const on = filterCat === k
               return (
                 <div key={k} onClick={() => setFilter(k)} style={{
-                  display: 'flex', alignItems: 'center', gap: 5,
+                  display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3,
                   background: on ? accbg : bg3,
                   border: `1px solid ${on ? acc : bdr}`,
-                  borderRadius: 999, padding: '6px 13px',
+                  borderRadius: 999, padding: on ? '6px 13px 5px' : '6px 13px',
                   fontSize: 12, fontWeight: 600, color: on ? acc : t2,
                   cursor: 'pointer', transition: 'all 0.18s', whiteSpace: 'nowrap', flexShrink: 0,
                 }}>
-                  {icon && <span>{icon}</span>}{label}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                    {icon && <span>{icon}</span>}{label}
+                  </div>
+                  {on && <div style={{ width: 4, height: 4, borderRadius: '50%', background: acc }} />}
                 </div>
               )
             })}
@@ -577,8 +587,8 @@ export default function Discover() {
           )}
 
           {/* Count header */}
-          <div style={{ fontSize: 11, fontWeight: 700, color: t3, textTransform: 'uppercase', letterSpacing: '0.8px', padding: '14px 16px 8px' }}>
-            {filtered.length} listing{filtered.length !== 1 ? 's' : ''}
+          <div style={{ fontSize: 12, color: t3, padding: '4px 16px 8px' }}>
+            {filtered.length} listing{filtered.length !== 1 ? 's' : ''} near you
           </div>
 
           {/* Listing cards / empty state */}
