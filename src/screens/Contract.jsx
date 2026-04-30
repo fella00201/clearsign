@@ -110,8 +110,18 @@ export default function Contract() {
 
         {/* Listing title */}
         {contract.listingTitle && (
-          <div style={{ fontFamily: serif, fontSize: 20, fontWeight: 300, color: text, marginBottom: 14 }}>
-            {contract.listingTitle}
+          <div style={{ marginBottom: 14 }}>
+            <div style={{ fontFamily: serif, fontSize: 20, fontWeight: 300, color: text, marginBottom: 4 }}>
+              {contract.listingTitle}
+            </div>
+            {contract.listingId && (
+              <div
+                onClick={() => navigate(`/listing/${contract.listingId}`)}
+                style={{ fontSize: 12, color: acc, cursor: 'pointer' }}
+              >
+                View listing →
+              </div>
+            )}
           </div>
         )}
 
