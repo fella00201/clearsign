@@ -129,7 +129,7 @@ export default function Messages() {
           const msgs    = t.messages || []
           const last    = msgs[msgs.length - 1]
           const unread  = last && last.from !== user.email && !last.read
-          const preview = t.listingTitle ? `Re: ${t.listingTitle}` : last ? last.text : 'New chat'
+          const preview = last ? last.text : 'New chat'
           const timeStr = last ? fmtTime(last.at) : (t.lastAt ? fmtTime(t.lastAt) : '')
 
           return (
@@ -154,6 +154,14 @@ export default function Messages() {
                   <div style={{ fontSize: 14, fontWeight: unread ? 700 : 500, color: text }}>{other.name}</div>
                   <div style={{ fontSize: 11, color: t3 }}>{timeStr}</div>
                 </div>
+                {t.listingId && t.listingTitle && (
+                  <div
+                    onClick={e => { e.stopPropagation(); navigate(`/listing/${t.listingId}`) }}
+                    style={{ display: 'inline-flex', alignItems: 'center', gap: 3, fontSize: 11, color: acc, cursor: 'pointer', marginBottom: 2 }}
+                  >
+                    {t.listingTitle} ↗
+                  </div>
+                )}
                 <div style={{ fontSize: 12, color: t2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 220 }}>
                   {preview}
                 </div>
