@@ -2,10 +2,13 @@ import { useEffect, useRef, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useAuth } from '../store/useAuth'
 import { useMessages } from '../store/useMessages'
+import { useContracts } from '../store/useContracts'
+import { generateContract } from '../lib/contracts'
 import {
   supabase,
   fetchThreadById,
   fetchMessages,
+  fetchListingById,
   insertMessage,
   updateThreadLastAt,
 } from '../lib/supabase'
@@ -19,6 +22,7 @@ const t2   = '#9896b2'
 const t3   = '#56546c'
 const acc  = '#5b8fff'
 const acc2 = '#3d6ee0'
+const green = '#3ecf7a'
 const sans = "'Inter', sans-serif"
 const serif = "'Sora', sans-serif"
 
@@ -56,10 +60,13 @@ export default function Chat() {
   const user         = useAuth(s => s.user)
 
   const loadUnreadCount = useMessages(s => s.loadUnreadCount)
+  const saveContract    = useContracts(s => s.saveContract)
 
-  const [thread, setThread]     = useState(null)
-  const [messages, setMessages] = useState([])
-  const [input, setInput]       = useState('')
+  const [thread, setThread]       = useState(null)
+  const [messages, setMessages]   = useState([])
+  const [input, setInput]         = useState('')
+  const [listing, setListing]     = useState(null)
+  const [generating, setGenerating] = useState(false)
 
   const scrollRef   = useRef(null)
   const textareaRef = useRef(null)
@@ -103,6 +110,12 @@ export default function Chat() {
     load()
     return () => { cancelled = true }
   }, [threadId, user?.email])
+
+  // Fetch the listing so we can determine if current user is the owner
+  useEffect(() => {
+    if (!thread?.listingId) return
+    fetchListingById(thread.listingId).then(setListing).catch(() => {})
+  }, [thread?.listingId])
 
   // Auto-scroll to bottom whenever messages change
   useEffect(() => {
@@ -245,6 +258,50 @@ export default function Chat() {
     ? { name: thread.p2Name, color: thread.p2Color, email: thread.p2 }
     : { name: thread.p1Name, color: thread.p1Color, email: thread.p1 }
 
+  const isListingOwner = listing && user && listing.ownerEmail === user.email
+
+  async function createContract() {
+    if (generating || !listing || !user) return
+    setGenerating(true)
+    try {
+      const contractText = await generateContract(listing, user.name, 'provider')
+      const doc = {
+        id: Math.random().toString(36).slice(2, 12),
+        listingId: listing.id,
+        listingTitle: listing.title,
+        contractText,
+        status: 'pending_counterparty',
+        creatorEmail: user.email,
+        creatorName: user.name,
+        creatorColor: user.avatarColor,
+        creatorRole: 'provider',
+        counterpartyEmail: other.email,
+        counterpartyName: other.name,
+        counterpartyColor: other.color,
+        counterpartyRole: 'seeker',
+        createdAt: new Date().toISOString(),
+      }
+      const saved = await saveContract(doc)
+      try {
+        const notifKey = `cs_notifs_${other.email}`
+        const existing = JSON.parse(localStorage.getItem(notifKey) || '[]')
+        const notif = {
+          id: Math.random().toString(36).slice(2, 10),
+          type: 'contract_request',
+          title: 'New contract request',
+          body: `${user.name} sent you a contract for: "${listing.title}"`,
+          at: new Date().toISOString(),
+          read: false,
+          contractId: saved.id,
+        }
+        localStorage.setItem(notifKey, JSON.stringify([notif, ...existing]))
+      } catch {}
+      navigate(`/contract/${saved.id}`)
+    } catch {
+      setGenerating(false)
+    }
+  }
+
   return (
     <div style={{ minHeight: '100svh', background: bg, display: 'flex', flexDirection: 'column', maxWidth: 480, margin: '0 auto', fontFamily: sans, fontSize: 15, color: text }}>
 
@@ -299,6 +356,25 @@ export default function Chat() {
           )
         })}
       </div>
+
+      {/* Create contract banner — visible to listing owner only */}
+      {isListingOwner && (
+        <div style={{ padding: '0 14px 10px', flexShrink: 0 }}>
+          <button
+            disabled={generating}
+            onClick={createContract}
+            style={{
+              width: '100%', padding: '13px 16px', borderRadius: 14,
+              border: 'none', background: generating ? '#236644' : green,
+              color: '#0d0d11', fontSize: 14, fontWeight: 700,
+              cursor: generating ? 'default' : 'pointer',
+              fontFamily: sans, transition: 'all 0.18s',
+            }}
+          >
+            {generating ? 'Generating contract…' : `Create contract with ${other.name} →`}
+          </button>
+        </div>
+      )}
 
       {/* Input bar */}
       <div style={{
