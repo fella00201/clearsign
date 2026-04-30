@@ -15,6 +15,7 @@ const text  = '#eeedf5'
 const t2    = '#9896b2'
 const t3    = '#56546c'
 const acc   = '#5b8fff'
+const acc2  = '#3d6ee0'
 const accbg = '#141f3c'
 const amber = '#f5a623'
 const red   = '#ff5b5b'
@@ -291,6 +292,7 @@ export default function Discover() {
 
   const noAlerts = user && (!user.alerts || !user.alerts.length)
   const [searchFocused, setSearchFocused] = useState(false)
+  const [fabHover, setFabHover]           = useState(false)
 
   // ── Shared search bar ──────────────────────────────────────────────────
   const searchBar = (
@@ -600,6 +602,36 @@ export default function Discover() {
           </div>
         </div>
       )}
+
+      {/* FAB — Post listing */}
+      <div
+        onMouseEnter={() => setFabHover(true)}
+        onMouseLeave={() => setFabHover(false)}
+        style={{ position: 'fixed', bottom: isDesktop ? 28 : 80, right: 20, display: 'flex', alignItems: 'center', gap: 8, zIndex: 100 }}
+      >
+        {fabHover && isDesktop && (
+          <div style={{ background: bg, border: `1px solid ${bdr}`, borderRadius: 999, padding: '7px 14px', fontSize: 12, fontWeight: 600, color: text, whiteSpace: 'nowrap', boxShadow: '0 4px 12px rgba(0,0,0,0.5)', pointerEvents: 'none' }}>
+            Post listing
+          </div>
+        )}
+        <button
+          onClick={() => navigate('/post')}
+          style={{
+            width: 52, height: 52, borderRadius: '50%',
+            background: fabHover ? acc2 : acc,
+            border: 'none', cursor: 'pointer',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            boxShadow: '0 4px 16px rgba(91,143,255,0.4)',
+            transform: fabHover ? 'scale(1.08)' : 'scale(1)',
+            transition: 'all 0.18s ease',
+            flexShrink: 0,
+          }}
+        >
+          <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
+            <path d="M11 4v14M4 11h14" stroke="#fff" strokeWidth="2.2" strokeLinecap="round" />
+          </svg>
+        </button>
+      </div>
 
       <NavBar active="discover" />
     </div>
