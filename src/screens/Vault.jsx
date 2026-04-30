@@ -121,6 +121,18 @@ export default function Vault() {
                     {sealed ? 'Sealed' : 'Pending'}
                   </div>
                 </div>
+                {c.listingId && c.listingTitle && (
+                  <div
+                    onClick={e => { e.stopPropagation(); navigate(`/listing/${c.listingId}`) }}
+                    style={{
+                      display: 'inline-flex', alignItems: 'center', gap: 4,
+                      padding: '3px 9px', borderRadius: 999, marginBottom: 8,
+                      background: bg3, color: t2, fontSize: 11, cursor: 'pointer',
+                    }}
+                  >
+                    Re: {c.listingTitle} ↗
+                  </div>
+                )}
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                   <div style={{ fontSize: 11, color: t3 }}>
                     {fmtDate(sealed ? c.sealedAt : c.createdAt)}
