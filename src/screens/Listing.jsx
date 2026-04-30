@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useListings } from '../store/useListings'
 import { useAuth } from '../store/useAuth'
+import { useContracts } from '../store/useContracts'
+import { generateContract } from '../lib/contracts'
 import { findThread, insertThread } from '../lib/supabase'
 import { CATS, TAGS } from '../data/categories'
 
@@ -66,7 +68,9 @@ export default function Listing() {
   const setFilter   = useListings(s => s.setFilter)
   const toggleTag   = useListings(s => s.toggleFilterTag)
 
-  const [reviews, setReviews] = useState([])
+  const saveContract = useContracts(s => s.saveContract)
+  const [reviews, setReviews]     = useState([])
+  const [generating, setGenerating] = useState(false)
 
   useEffect(() => { if (!listings.length) loadListings() }, [listings.length, loadListings])
 
@@ -324,7 +328,69 @@ export default function Listing() {
         }}>
           Your listing
         </div>
+      ) : listing.cat === 'seek' ? (
+        /* Seek listing: visitor is offering help — show Message + "I can help →" */
+        <div style={{
+          padding: '14px 16px',
+          paddingBottom: 'max(14px, env(safe-area-inset-bottom))',
+          background: bg, borderTop: `1px solid ${bdr}`, flexShrink: 0,
+          display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 9,
+        }}>
+          <button
+            onClick={startMessage}
+            style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7, padding: 14, borderRadius: 14, border: `1px solid ${bdr}`, background: bg3, color: text, fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: sans, transition: 'all 0.18s' }}
+          >
+            💬 Message
+          </button>
+          <button
+            disabled={generating}
+            onClick={async () => {
+              if (generating || !user) return
+              setGenerating(true)
+              try {
+                const contractText = await generateContract(listing, user.name, 'provider')
+                const doc = {
+                  id: Math.random().toString(36).slice(2, 12),
+                  listingId: listing.id,
+                  listingTitle: listing.title,
+                  contractText,
+                  status: 'pending_counterparty',
+                  creatorEmail: user.email,
+                  creatorName: user.name,
+                  creatorColor: user.avatarColor,
+                  creatorRole: 'provider',
+                  counterpartyEmail: listing.ownerEmail,
+                  counterpartyName: listing.ownerName,
+                  counterpartyColor: listing.ownerColor,
+                  counterpartyRole: 'seeker',
+                  createdAt: new Date().toISOString(),
+                }
+                const saved = await saveContract(doc)
+                try {
+                  const notifKey = `cs_notifs_${listing.ownerEmail}`
+                  const existing = JSON.parse(localStorage.getItem(notifKey) || '[]')
+                  localStorage.setItem(notifKey, JSON.stringify([{
+                    id: Math.random().toString(36).slice(2, 10),
+                    type: 'contract_request',
+                    title: 'New contract offer',
+                    body: `${user.name} can help with: "${listing.title}"`,
+                    at: new Date().toISOString(),
+                    read: false,
+                    contractId: saved.id,
+                  }, ...existing]))
+                } catch {}
+                navigate(`/contract/${saved.id}`)
+              } catch {
+                setGenerating(false)
+              }
+            }}
+            style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7, padding: 14, borderRadius: 14, border: 'none', background: generating ? '#3a4a6a' : acc, color: '#fff', fontSize: 14, fontWeight: 600, cursor: generating ? 'default' : 'pointer', fontFamily: sans, transition: 'all 0.18s' }}
+          >
+            {generating ? 'Generating…' : 'I can help →'}
+          </button>
+        </div>
       ) : (
+        /* Rental / service / sale: contract flows through Chat (owner initiates) */
         <div style={{
           padding: '14px 16px',
           paddingBottom: 'max(14px, env(safe-area-inset-bottom))',
