@@ -42,6 +42,12 @@ export default function Sealed() {
         from { opacity: 0; transform: translateY(10px); }
         to   { opacity: 1; transform: translateY(0); }
       }
+      @keyframes cs-confetti-0 { 0%{opacity:0;transform:translate(0,0) scale(0)} 20%{opacity:1} 100%{opacity:0;transform:translate(-52px,-64px) scale(1.2)} }
+      @keyframes cs-confetti-1 { 0%{opacity:0;transform:translate(0,0) scale(0)} 20%{opacity:1} 100%{opacity:0;transform:translate(56px,-60px) scale(1.2)} }
+      @keyframes cs-confetti-2 { 0%{opacity:0;transform:translate(0,0) scale(0)} 20%{opacity:1} 100%{opacity:0;transform:translate(-72px,-24px) scale(1.1)} }
+      @keyframes cs-confetti-3 { 0%{opacity:0;transform:translate(0,0) scale(0)} 20%{opacity:1} 100%{opacity:0;transform:translate(72px,-20px) scale(1.1)} }
+      @keyframes cs-confetti-4 { 0%{opacity:0;transform:translate(0,0) scale(0)} 20%{opacity:1} 100%{opacity:0;transform:translate(-44px,52px) scale(1)} }
+      @keyframes cs-confetti-5 { 0%{opacity:0;transform:translate(0,0) scale(0)} 20%{opacity:1} 100%{opacity:0;transform:translate(48px,56px) scale(1)} }
     `
     document.head.appendChild(style)
     return () => document.head.removeChild(style)
@@ -60,8 +66,23 @@ export default function Sealed() {
       {/* Body — vertically centered */}
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '40px 24px 24px' }}>
 
-        {/* Animated ring + checkmark */}
-        <svg width="90" height="90" viewBox="0 0 90 90" fill="none" style={{ marginBottom: 24, overflow: 'visible' }}>
+        {/* Animated ring + checkmark + confetti */}
+        <div style={{ position: 'relative', width: 90, height: 90, marginBottom: 24 }}>
+          {[
+            { color: acc,   idx: 0 },
+            { color: green, idx: 1 },
+            { color: amber, idx: 2 },
+            { color: acc,   idx: 3 },
+            { color: green, idx: 4 },
+            { color: amber, idx: 5 },
+          ].map(({ color, idx }) => (
+            <div key={idx} style={{
+              position: 'absolute', top: '50%', left: '50%',
+              width: 8, height: 8, borderRadius: '50%', background: color,
+              animation: `cs-confetti-${idx} 0.9s cubic-bezier(0.2,0.8,0.4,1) ${0.65 + idx * 0.04}s both`,
+            }} />
+          ))}
+        <svg width="90" height="90" viewBox="0 0 90 90" fill="none" style={{ overflow: 'visible' }}>
           <circle
             cx="45" cy="45" r="35"
             fill={greenbg}
@@ -78,6 +99,7 @@ export default function Sealed() {
             style={{ animation: 'cs-check 0.35s ease-out 0.7s forwards' }}
           />
         </svg>
+        </div>
 
         {/* Heading */}
         <div style={{ fontFamily: serif, fontSize: 26, fontWeight: 300, color: text, marginBottom: 6, animation: 'cs-fade-up 0.5s ease-out 0.4s both' }}>

@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../store/useAuth'
+import { useContracts } from '../store/useContracts'
 import { CATS, TAGS } from '../data/categories'
 import NavBar from '../components/NavBar'
 
@@ -124,9 +125,10 @@ function applyTheme(theme) {
 }
 
 export default function Profile() {
-  const navigate = useNavigate()
-  const user     = useAuth(s => s.user)
-  const signout  = useAuth(s => s.signout)
+  const navigate   = useNavigate()
+  const user       = useAuth(s => s.user)
+  const signout    = useAuth(s => s.signout)
+  const contracts  = useContracts(s => s.contracts)
 
   const [theme, setTheme] = useState(
     () => localStorage.getItem('cs_theme') || 'dark'
@@ -137,6 +139,10 @@ export default function Profile() {
     const all = JSON.parse(localStorage.getItem('cs_listings_user') || '[]')
     myListings = all.filter(l => l.ownerEmail === user?.email)
   } catch {}
+
+  const myContracts = contracts.filter(
+    c => c.creatorEmail === user?.email || c.counterpartyEmail === user?.email
+  )
 
   function handleSignOut() {
     signout()
@@ -178,6 +184,9 @@ export default function Profile() {
             {user?.name}
           </div>
           <div style={{ fontSize: 13, color: t2 }}>{user?.email}</div>
+          <div style={{ fontSize: 12, color: t3, marginTop: 4 }}>
+            {myListings.length} listing{myListings.length !== 1 ? 's' : ''} · {myContracts.length} contract{myContracts.length !== 1 ? 's' : ''}
+          </div>
         </div>
 
         {/* My listings */}
