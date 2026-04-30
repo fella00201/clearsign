@@ -346,8 +346,13 @@ export default function Listing() {
             onClick={async () => {
               if (generating || !user) return
               setGenerating(true)
+              // seek listings: visitor is the provider offering help; otherwise visitor is the seeker
+              const isSeek     = listing.cat === 'seek'
+              const userRole   = isSeek ? 'provider' : 'seeker'
+              const creatorRole    = userRole
+              const counterpartyRole = isSeek ? 'seeker' : 'provider'
               try {
-                const contractText = await generateContract(listing, user.name)
+                const contractText = await generateContract(listing, user.name, creatorRole)
                 const doc = {
                   id: Math.random().toString(36).slice(2, 12),
                   listingId: listing.id,
@@ -357,9 +362,11 @@ export default function Listing() {
                   creatorEmail: user.email,
                   creatorName: user.name,
                   creatorColor: user.avatarColor,
+                  creatorRole,
                   counterpartyEmail: listing.ownerEmail,
                   counterpartyName: listing.ownerName,
                   counterpartyColor: listing.ownerColor,
+                  counterpartyRole,
                   createdAt: new Date().toISOString(),
                 }
                 // await so we get the canonical Supabase UUID (or the local id on failure)
@@ -388,7 +395,7 @@ export default function Listing() {
             }}
             style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7, padding: 14, borderRadius: 14, border: 'none', background: generating ? '#3a4a6a' : acc, color: '#fff', fontSize: 14, fontWeight: 600, cursor: generating ? 'default' : 'pointer', fontFamily: sans, transition: 'all 0.18s' }}
           >
-            {generating ? 'Generating…' : 'Create contract →'}
+            {generating ? 'Generating…' : listing.cat === 'seek' ? 'I can help →' : 'Create contract →'}
           </button>
         </div>
       )}
