@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useListings } from '../store/useListings'
 import { useAuth } from '../store/useAuth'
 import { CATS, TAGS, ALL_POPULAR_TAGS } from '../data/categories'
+import NavBar from '../components/NavBar'
 
 // ── Design tokens ──────────────────────────────────────────────────────────
 const bg    = '#0d0d11'
@@ -169,81 +170,6 @@ function ListingCard({ listing, onNavigate }) {
   )
 }
 
-// ── Bottom nav bar ─────────────────────────────────────────────────────────
-const NAV_TABS = [
-  {
-    id: 'discover', path: '/', label: 'Find',
-    icon: (on) => (
-      <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-        <circle cx="9" cy="9" r="6" stroke={on ? acc : t3} strokeWidth="1.4" />
-        <path d="M14 14l3 3" stroke={on ? acc : t3} strokeWidth="1.4" strokeLinecap="round" />
-      </svg>
-    ),
-  },
-  {
-    id: 'messages', path: '/messages', label: 'Messages',
-    icon: (on) => (
-      <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-        <path d="M3 4h14v10a1 1 0 01-1 1H4a1 1 0 01-1-1V4z" stroke={on ? acc : t3} strokeWidth="1.4" />
-        <path d="M6 8h8M6 11h5" stroke={on ? acc : t3} strokeWidth="1.3" strokeLinecap="round" />
-      </svg>
-    ),
-  },
-  {
-    id: 'post', path: '/post', label: 'Post',
-    icon: (on) => (
-      <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-        <circle cx="10" cy="10" r="8" stroke={on ? acc : t3} strokeWidth="1.4" />
-        <path d="M10 6v8M6 10h8" stroke={on ? acc : t3} strokeWidth="1.4" strokeLinecap="round" />
-      </svg>
-    ),
-  },
-  {
-    id: 'vault', path: '/vault', label: 'Vault',
-    icon: (on) => (
-      <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-        <rect x="3" y="3" width="14" height="14" rx="2" stroke={on ? acc : t3} strokeWidth="1.4" />
-        <path d="M7 10l2.5 2.5L13 8" stroke={on ? acc : t3} strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
-      </svg>
-    ),
-  },
-  {
-    id: 'profile', path: '/profile', label: 'Profile',
-    icon: (on) => (
-      <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-        <circle cx="10" cy="7" r="3.5" stroke={on ? acc : t3} strokeWidth="1.4" />
-        <path d="M4 17c0-3.3 2.7-6 6-6s6 2.7 6 6" stroke={on ? acc : t3} strokeWidth="1.4" strokeLinecap="round" />
-      </svg>
-    ),
-  },
-]
-
-function NavBar({ active }) {
-  const navigate = useNavigate()
-  return (
-    <div style={{
-      display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)',
-      borderTop: `1px solid ${bdr}`, background: bg, flexShrink: 0,
-      paddingBottom: 'env(safe-area-inset-bottom)',
-    }}>
-      {NAV_TABS.map(({ id, path, label, icon }) => {
-        const on = active === id
-        return (
-          <button key={id} onClick={() => navigate(path)} style={{
-            display: 'flex', flexDirection: 'column', alignItems: 'center',
-            justifyContent: 'center', gap: 3, padding: '8px 4px',
-            border: 'none', background: 'none', cursor: 'pointer',
-            fontFamily: sans,
-          }}>
-            {icon(on)}
-            <span style={{ fontSize: 10, fontWeight: 600, color: on ? acc : t3 }}>{label}</span>
-          </button>
-        )
-      })}
-    </div>
-  )
-}
-
 // ── Main screen ────────────────────────────────────────────────────────────
 export default function Discover() {
   const navigate = useNavigate()
@@ -375,7 +301,7 @@ export default function Discover() {
     <div style={{
       minHeight: '100svh', background: bg,
       display: 'flex', flexDirection: 'column',
-      maxWidth: isDesktop ? 1200 : 480, margin: '0 auto',
+      ...(isDesktop ? { marginLeft: 220 } : { maxWidth: 480, margin: '0 auto' }),
       fontFamily: sans, fontSize: 15, color: text,
     }}>
 
@@ -496,11 +422,11 @@ export default function Discover() {
               {filtered.length} listing{filtered.length !== 1 ? 's' : ''}
             </div>
 
-            {/* 3-column grid */}
+            {/* 2-column grid */}
             {filtered.length > 0 ? (
               <div style={{
                 display: 'grid',
-                gridTemplateColumns: 'repeat(3, 1fr)',
+                gridTemplateColumns: 'repeat(2, 1fr)',
                 gap: 14,
                 padding: '0 20px 40px',
                 alignItems: 'start',
