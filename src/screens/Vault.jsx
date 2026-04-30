@@ -63,7 +63,7 @@ export default function Vault() {
 
       {/* Topbar */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '13px 16px', background: bg, borderBottom: `1px solid ${bdr}`, flexShrink: 0 }}>
-        <div style={{ fontFamily: serif, fontSize: 20, fontWeight: 500, color: text }}>
+        <div onClick={() => navigate('/')} style={{ cursor: 'pointer', fontFamily: serif, fontSize: 20, fontWeight: 500, color: text }}>
           Clear<b style={{ color: acc, fontWeight: 500 }}>Sign</b>
         </div>
         <div style={{ fontSize: 12, color: t3 }}>{mine.length} doc{mine.length !== 1 ? 's' : ''}</div>

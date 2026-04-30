@@ -155,7 +155,7 @@ export default function Profile() {
 
       {/* Topbar */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '13px 16px', background: bg, borderBottom: `1px solid ${bdr}`, flexShrink: 0 }}>
-        <div style={{ fontFamily: serif, fontSize: 20, fontWeight: 600, color: text }}>
+        <div onClick={() => navigate('/')} style={{ cursor: 'pointer', fontFamily: serif, fontSize: 20, fontWeight: 600, color: text }}>
           Clear<b style={{ color: acc, fontWeight: 600 }}>Sign</b>
         </div>
         <div style={{ width: 34 }} />

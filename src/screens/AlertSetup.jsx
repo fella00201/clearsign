@@ -64,7 +64,7 @@ export default function AlertSetup() {
             <path d="M11 4L6 9l5 5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
         </button>
-        <div style={{ fontFamily: serif, fontSize: 17, fontWeight: 500, color: text }}>
+        <div onClick={() => navigate('/')} style={{ cursor: 'pointer', fontFamily: serif, fontSize: 17, fontWeight: 500, color: text }}>
           Clear<b style={{ color: acc, fontWeight: 500 }}>Sign</b>
         </div>
         <div style={{ width: 30 }} />

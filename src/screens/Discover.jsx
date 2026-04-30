@@ -376,7 +376,7 @@ export default function Discover() {
         padding: '13px 16px', background: bg,
         borderBottom: `1px solid ${bdr}`, flexShrink: 0, zIndex: 10,
       }}>
-        <div style={{ fontFamily: serif, fontSize: 20, fontWeight: 600, color: text }}>
+        <div onClick={() => navigate('/')} style={{ cursor: 'pointer', fontFamily: serif, fontSize: 20, fontWeight: 600, color: text }}>
           Clear<b style={{ color: acc, fontWeight: 600 }}>Sign</b>
         </div>
         <button

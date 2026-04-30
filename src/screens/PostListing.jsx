@@ -63,6 +63,7 @@ const FIELD_META = {
 
 // ── Shared sub-components ─────────────────────────────────────────────────
 function Topbar({ onBack, right }) {
+  const navigate = useNavigate()
   return (
     <div style={{
       display: 'flex', alignItems: 'center', justifyContent: 'space-between',
@@ -74,7 +75,7 @@ function Topbar({ onBack, right }) {
           <path d="M11 4L6 9l5 5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
       </button>
-      <div style={{ fontFamily: serif, fontSize: 17, fontWeight: 500, color: text }}>
+      <div onClick={() => navigate('/')} style={{ cursor: 'pointer', fontFamily: serif, fontSize: 17, fontWeight: 500, color: text }}>
         Clear<b style={{ color: acc, fontWeight: 500 }}>Sign</b>
       </div>
       <div style={{ width: 34, fontSize: 12, color: t3, fontWeight: 600, textAlign: 'right' }}>
