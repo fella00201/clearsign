@@ -188,6 +188,14 @@ export default function Listing() {
       {/* ── Scrollable body ── */}
       <div style={{ flex: 1, overflowY: 'auto', WebkitOverflowScrolling: 'touch', padding: '16px 16px 100px' }}>
 
+        {/* Category color gradient tint */}
+        <div style={{
+          margin: '-16px -16px 14px',
+          height: 52,
+          background: `linear-gradient(to bottom, ${bs.color}20, transparent)`,
+          pointerEvents: 'none',
+        }} />
+
         {/* Badge */}
         <div style={{
           display: 'inline-flex', alignItems: 'center', gap: 4, marginBottom: 10,
@@ -226,15 +234,15 @@ export default function Listing() {
             <div style={{ fontSize: 11, fontWeight: 700, color: t3, textTransform: 'uppercase', letterSpacing: '0.6px', marginBottom: 8 }}>
               Tags
             </div>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5 }}>
+            <div style={{ display: 'flex', gap: 7, overflowX: 'auto', scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch', paddingBottom: 2, margin: '0 -16px', padding: '0 16px 2px' }}>
               {listing.tags.map(t => (
                 <span
                   key={t}
                   onClick={() => searchByTag(t)}
                   style={{
-                    display: 'inline-flex', alignItems: 'center',
+                    display: 'inline-flex', alignItems: 'center', flexShrink: 0,
                     fontSize: 11, fontWeight: 600, letterSpacing: '0.2px',
-                    padding: '3px 9px', borderRadius: 999, cursor: 'pointer',
+                    padding: '5px 11px', borderRadius: 999, cursor: 'pointer',
                     background: tagCfg.color, color: tagCfg.text,
                     border: `1px solid ${tagCfg.text}33`,
                   }}
@@ -244,7 +252,7 @@ export default function Listing() {
               ))}
             </div>
             <div style={{ fontSize: 11, color: t3, marginTop: 6 }}>
-              Tap a tag to find similar listings
+              Tap a tag to browse similar listings
             </div>
           </div>
         )}
@@ -262,19 +270,21 @@ export default function Listing() {
         {/* Owner card */}
         <div style={{
           display: 'flex', alignItems: 'center', gap: 10,
-          padding: 13, background: bg3, border: `1px solid ${bdr}`,
+          padding: 13, background: bg3, border: `1px solid ${acc}33`,
           borderRadius: 14, marginBottom: 12,
         }}>
           <Avatar name={listing.ownerName} color={listing.ownerColor} size={42} />
           <div style={{ flex: 1 }}>
+            <div style={{ fontSize: 10, fontWeight: 700, color: t3, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 3 }}>Posted by</div>
             <div style={{ fontSize: 14, fontWeight: 600, color: text }}>{listing.ownerName}</div>
-            <div style={{ fontSize: 12, color: t2 }}>Posted {fmtDate(listing.createdAt)}</div>
+            <div style={{ fontSize: 12, color: t2 }}>{fmtDate(listing.createdAt)}</div>
             {listing.avgRating > 0 && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginTop: 3 }}>
-                <Stars rating={listing.avgRating} />
-                <span style={{ fontSize: 11, color: t3 }}>
-                  {listing.avgRating.toFixed(1)} ({listing.reviewCount})
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 5 }}>
+                <Stars rating={listing.avgRating} size={15} />
+                <span style={{ fontSize: 12, fontWeight: 700, color: text }}>
+                  {listing.avgRating.toFixed(1)}
                 </span>
+                <span style={{ fontSize: 11, color: t3 }}>({listing.reviewCount} reviews)</span>
               </div>
             )}
           </div>
@@ -283,6 +293,18 @@ export default function Listing() {
         {/* Reviews */}
         {reviews.length > 0 ? (
           <div style={{ marginBottom: 12 }}>
+            {/* Rating summary bar */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px', background: bg2, border: `1px solid ${bdr}`, borderRadius: 14, marginBottom: 10 }}>
+              <div style={{ fontFamily: serif, fontSize: 34, fontWeight: 300, color: text, lineHeight: 1 }}>
+                {listing.avgRating?.toFixed(1) || '—'}
+              </div>
+              <div>
+                <Stars rating={listing.avgRating || 0} size={16} />
+                <div style={{ fontSize: 12, color: t2, marginTop: 4 }}>
+                  {reviews.length} review{reviews.length !== 1 ? 's' : ''}
+                </div>
+              </div>
+            </div>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
               <div style={{ fontSize: 13, fontWeight: 600, color: text }}>Reviews</div>
               {reviews.length > 2 && (
@@ -325,6 +347,7 @@ export default function Listing() {
           paddingBottom: 'max(14px, env(safe-area-inset-bottom))',
           background: bg, borderTop: `1px solid ${bdr}`, flexShrink: 0,
           textAlign: 'center', fontSize: 13, color: t2,
+          boxShadow: `0 -16px 24px ${bg}`,
         }}>
           Your listing
         </div>
@@ -335,6 +358,7 @@ export default function Listing() {
           paddingBottom: 'max(14px, env(safe-area-inset-bottom))',
           background: bg, borderTop: `1px solid ${bdr}`, flexShrink: 0,
           display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 9,
+          boxShadow: `0 -16px 24px ${bg}`,
         }}>
           <button
             onClick={startMessage}
@@ -395,6 +419,7 @@ export default function Listing() {
           padding: '14px 16px',
           paddingBottom: 'max(14px, env(safe-area-inset-bottom))',
           background: bg, borderTop: `1px solid ${bdr}`, flexShrink: 0,
+          boxShadow: `0 -16px 24px ${bg}`,
         }}>
           <button
             onClick={startMessage}
