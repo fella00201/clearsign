@@ -185,6 +185,22 @@ export default function Notifications() {
                     <div style={{ fontSize: 13, fontWeight: 600, color: text, marginBottom: 2 }}>{n.title}</div>
                     <div style={{ fontSize: 12, color: t2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{n.body}</div>
                     <div style={{ fontSize: 11, color: t3, marginTop: 3 }}>{fmtDate(n.at)}</div>
+                    {n.contractId && n.listingId && (
+                      <div style={{ display: 'flex', gap: 7, marginTop: 10 }}>
+                        <button
+                          onClick={e => { e.stopPropagation(); markRead(n); navigate(`/contract/${n.contractId}`) }}
+                          style={{ flex: 1, padding: '7px 10px', borderRadius: 8, border: 'none', background: acc, color: '#fff', fontSize: 11, fontWeight: 700, cursor: 'pointer', fontFamily: sans }}
+                        >
+                          View contract
+                        </button>
+                        <button
+                          onClick={e => { e.stopPropagation(); markRead(n); navigate(`/listing/${n.listingId}`) }}
+                          style={{ flex: 1, padding: '7px 10px', borderRadius: 8, border: `1px solid ${bdr}`, background: bg3, color: text, fontSize: 11, fontWeight: 600, cursor: 'pointer', fontFamily: sans }}
+                        >
+                          View listing
+                        </button>
+                      </div>
+                    )}
                   </div>
                   {!n.read && (
                     <div style={{ width: 8, height: 8, borderRadius: '50%', background: acc, flexShrink: 0, marginTop: 4 }} />
