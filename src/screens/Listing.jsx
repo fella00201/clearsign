@@ -2,8 +2,6 @@ import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useListings } from '../store/useListings'
 import { useAuth } from '../store/useAuth'
-import { useContracts } from '../store/useContracts'
-import { generateContract } from '../lib/contracts'
 import { findThread, insertThread } from '../lib/supabase'
 import { CATS, TAGS } from '../data/categories'
 
@@ -68,9 +66,7 @@ export default function Listing() {
   const setFilter   = useListings(s => s.setFilter)
   const toggleTag   = useListings(s => s.toggleFilterTag)
 
-  const saveContract  = useContracts(s => s.saveContract)
   const [reviews, setReviews] = useState([])
-  const [generating, setGenerating] = useState(false)
 
   useEffect(() => { if (!listings.length) loadListings() }, [listings.length, loadListings])
 
@@ -333,69 +329,12 @@ export default function Listing() {
           padding: '14px 16px',
           paddingBottom: 'max(14px, env(safe-area-inset-bottom))',
           background: bg, borderTop: `1px solid ${bdr}`, flexShrink: 0,
-          display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 9,
         }}>
           <button
             onClick={startMessage}
-            style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7, padding: 14, borderRadius: 14, border: `1px solid ${bdr}`, background: bg3, color: text, fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: sans, transition: 'all 0.18s' }}
+            style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7, padding: 14, borderRadius: 14, border: `1px solid ${bdr}`, background: bg3, color: text, fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: sans, width: '100%', transition: 'all 0.18s' }}
           >
             💬 Message
-          </button>
-          <button
-            disabled={generating}
-            onClick={async () => {
-              if (generating || !user) return
-              setGenerating(true)
-              // seek listings: visitor is the provider offering help; otherwise visitor is the seeker
-              const isSeek     = listing.cat === 'seek'
-              const userRole   = isSeek ? 'provider' : 'seeker'
-              const creatorRole    = userRole
-              const counterpartyRole = isSeek ? 'seeker' : 'provider'
-              try {
-                const contractText = await generateContract(listing, user.name, creatorRole)
-                const doc = {
-                  id: Math.random().toString(36).slice(2, 12),
-                  listingId: listing.id,
-                  listingTitle: listing.title,
-                  contractText,
-                  status: 'pending',
-                  creatorEmail: user.email,
-                  creatorName: user.name,
-                  creatorColor: user.avatarColor,
-                  creatorRole,
-                  counterpartyEmail: listing.ownerEmail,
-                  counterpartyName: listing.ownerName,
-                  counterpartyColor: listing.ownerColor,
-                  counterpartyRole,
-                  createdAt: new Date().toISOString(),
-                }
-                // await so we get the canonical Supabase UUID (or the local id on failure)
-                const saved = await saveContract(doc)
-
-                // Notify the counterparty — use saved.id so the deep link works
-                try {
-                  const notifKey = `cs_notifs_${listing.ownerEmail}`
-                  const existing = JSON.parse(localStorage.getItem(notifKey) || '[]')
-                  const notif = {
-                    id: Math.random().toString(36).slice(2, 10),
-                    type: 'contract_request',
-                    title: 'New contract request',
-                    body: `${user.name} wants to sign for: "${listing.title}"`,
-                    at: new Date().toISOString(),
-                    read: false,
-                    contractId: saved.id,
-                  }
-                  localStorage.setItem(notifKey, JSON.stringify([notif, ...existing]))
-                } catch {}
-
-                navigate(`/contract/${saved.id}`)
-              } catch {
-                setGenerating(false)
-              }
-            }}
-            style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7, padding: 14, borderRadius: 14, border: 'none', background: generating ? '#3a4a6a' : acc, color: '#fff', fontSize: 14, fontWeight: 600, cursor: generating ? 'default' : 'pointer', fontFamily: sans, transition: 'all 0.18s' }}
-          >
-            {generating ? 'Generating…' : listing.cat === 'seek' ? 'I can help →' : 'Create contract →'}
           </button>
         </div>
       )}
