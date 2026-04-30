@@ -318,14 +318,12 @@ export default function Chat() {
           <Avatar name={other.name} color={other.color} size={30} />
           <div>
             <div style={{ fontSize: 14, fontWeight: 600, color: text }}>{other.name}</div>
-            {thread.listingTitle && (
-              <div
-                onClick={thread.listingId ? e => { e.stopPropagation(); navigate(`/listing/${thread.listingId}`) } : undefined}
-                style={{ fontSize: 11, color: thread.listingId ? acc : t2, cursor: thread.listingId ? 'pointer' : 'default' }}
-              >
-                Re: {thread.listingTitle}
-              </div>
-            )}
+            <div
+              style={{ fontSize: 11, color: t2, cursor: 'pointer' }}
+              onClick={() => thread.listingId && navigate(`/listing/${thread.listingId}`)}
+            >
+              {thread.listingTitle || 'Conversation'}
+            </div>
           </div>
         </div>
 
