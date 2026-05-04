@@ -18,67 +18,106 @@ const accbg = '#141f3c'
 const sans  = "'Inter', sans-serif"
 const serif = "'Sora', sans-serif"
 
-// ── Listing field config (mirrors HTML LISTING_FIELDS + FIELD_META) ────────
+// ── Listing field config ────────────────────────────────────────────────────
 const LISTING_FIELDS = {
-  room:          ['title', 'location', 'price_per_month', 'available_from', 'description'],
-  parking:       ['title', 'location', 'price_per_month', 'available_from', 'description'],
-  storage:       ['title', 'location', 'price_per_month', 'description'],
-  venue:         ['title', 'location', 'price_per_day', 'description'],
-  gear:          ['title', 'location', 'price_per_day', 'description'],
-  babysit:       ['title', 'location', 'hourly_rate', 'availability', 'description'],
-  cleaning:      ['title', 'location', 'hourly_rate', 'frequency', 'description'],
-  tutoring:      ['title', 'location', 'hourly_rate', 'subject', 'description'],
-  petcare:       ['title', 'location', 'hourly_rate', 'description'],
-  handyman:      ['title', 'location', 'hourly_rate', 'description'],
-  car:           ['title', 'location', 'asking_price', 'description'],
-  goods:         ['title', 'location', 'asking_price', 'description'],
-  loan:          ['title', 'location', 'loan_amount', 'repay_by', 'description'],
-  freelance:     ['title', 'location', 'total_fee', 'description'],
-  seek_room:     ['title', 'location', 'max_budget', 'move_in', 'description'],
-  seek_babysit:  ['title', 'location', 'max_rate', 'availability', 'description'],
-  seek_cleaning: ['title', 'location', 'max_rate', 'frequency', 'description'],
-  seek_parking:  ['title', 'location', 'max_budget', 'description'],
-  seek_tutor:    ['title', 'location', 'max_rate', 'subject', 'description'],
+  room:          ['title', 'location', 'price', 'available_from', 'description'],
+  parking:       ['title', 'location', 'price', 'available_from', 'description'],
+  storage:       ['title', 'location', 'price', 'description'],
+  venue:         ['title', 'location', 'price', 'description'],
+  gear:          ['title', 'location', 'price', 'description'],
+  babysit:       ['title', 'location', 'price', 'availability', 'description'],
+  cleaning:      ['title', 'location', 'price', 'frequency', 'description'],
+  tutoring:      ['title', 'location', 'price', 'subject', 'description'],
+  petcare:       ['title', 'location', 'price', 'description'],
+  handyman:      ['title', 'location', 'price', 'description'],
+  car:           ['title', 'location', 'price', 'description'],
+  goods:         ['title', 'location', 'price', 'description'],
+  loan:          ['title', 'location', 'price', 'repay_by', 'description'],
+  freelance:     ['title', 'location', 'price', 'description'],
+  seek_room:     ['title', 'location', 'price', 'move_in', 'description'],
+  seek_babysit:  ['title', 'location', 'price', 'availability', 'description'],
+  seek_cleaning: ['title', 'location', 'price', 'frequency', 'description'],
+  seek_parking:  ['title', 'location', 'price', 'description'],
+  seek_tutor:    ['title', 'location', 'price', 'subject', 'description'],
 }
 
+const DEFAULT_PERIOD = {
+  room: 'monthly', parking: 'monthly', storage: 'monthly',
+  venue: 'daily',  gear: 'daily',
+  babysit: 'hourly', cleaning: 'hourly', tutoring: 'hourly', petcare: 'hourly', handyman: 'hourly',
+  car: 'one-time', goods: 'one-time', loan: 'one-time', freelance: 'one-time',
+  seek_room: 'monthly', seek_babysit: 'hourly', seek_cleaning: 'hourly',
+  seek_parking: 'monthly', seek_tutor: 'hourly',
+}
+
+const CURRENCIES = [
+  { code: 'USD', symbol: '$' },   { code: 'EUR', symbol: '€' },
+  { code: 'GBP', symbol: '£' },   { code: 'SEK', symbol: 'kr' },
+  { code: 'NOK', symbol: 'kr' },  { code: 'DKK', symbol: 'kr' },
+  { code: 'CHF', symbol: 'Fr' },  { code: 'CAD', symbol: 'CA$' },
+  { code: 'AUD', symbol: 'A$' },  { code: 'NZD', symbol: 'NZ$' },
+  { code: 'JPY', symbol: '¥' },   { code: 'CNY', symbol: '¥' },
+  { code: 'INR', symbol: '₹' },   { code: 'BRL', symbol: 'R$' },
+  { code: 'MXN', symbol: 'MX$' }, { code: 'SGD', symbol: 'S$' },
+  { code: 'HKD', symbol: 'HK$' }, { code: 'ZAR', symbol: 'R' },
+]
+
+const PERIODS = [
+  { value: 'hourly',    label: 'Per hour' },
+  { value: 'daily',     label: 'Per day' },
+  { value: 'weekly',    label: 'Per week' },
+  { value: 'bi-weekly', label: 'Bi-weekly' },
+  { value: 'monthly',   label: 'Per month' },
+  { value: 'quarterly', label: 'Quarterly' },
+  { value: 'yearly',    label: 'Per year' },
+  { value: 'one-time',  label: 'One-time' },
+]
+
+const CITY_LIST = [
+  'New York, US','Los Angeles, US','Chicago, US','Houston, US','Phoenix, US',
+  'Philadelphia, US','San Antonio, US','San Diego, US','Dallas, US','Austin, US',
+  'San Francisco, US','Seattle, US','Denver, US','Boston, US','Miami, US',
+  'London, UK','Manchester, UK','Birmingham, UK','Glasgow, UK','Edinburgh, UK',
+  'Toronto, Canada','Vancouver, Canada','Montreal, Canada','Calgary, Canada',
+  'Sydney, Australia','Melbourne, Australia','Brisbane, Australia','Perth, Australia',
+  'Dublin, Ireland','Paris, France','Berlin, Germany','Munich, Germany','Hamburg, Germany',
+  'Amsterdam, Netherlands','Brussels, Belgium','Zurich, Switzerland','Vienna, Austria',
+  'Stockholm, Sweden','Gothenburg, Sweden','Malmö, Sweden','Oslo, Norway','Copenhagen, Denmark',
+  'Helsinki, Finland','Madrid, Spain','Barcelona, Spain','Lisbon, Portugal',
+  'Rome, Italy','Milan, Italy','Warsaw, Poland','Prague, Czech Republic',
+  'Singapore','Tokyo, Japan','Osaka, Japan','Seoul, South Korea','Hong Kong',
+  'Shanghai, China','Beijing, China','Mumbai, India','Delhi, India','Bangalore, India',
+  'Dubai, UAE','Abu Dhabi, UAE','São Paulo, Brazil','Buenos Aires, Argentina',
+  'Mexico City, Mexico','Lagos, Nigeria','Nairobi, Kenya','Cairo, Egypt',
+  'Johannesburg, South Africa','Cape Town, South Africa','Auckland, New Zealand',
+]
+
 const FIELD_META = {
-  title:           { label: 'Listing title',     ph: 'e.g. Sunny room near city centre' },
-  location:        { label: 'City or area',       ph: 'e.g. Austin, TX' },
-  price_per_month: { label: 'Monthly price',      ph: 'e.g. $750/month' },
-  price_per_day:   { label: 'Price per day',      ph: 'e.g. $120/day' },
-  hourly_rate:     { label: 'Hourly rate',        ph: 'e.g. $18/hr' },
-  asking_price:    { label: 'Asking price',       ph: 'e.g. $8,500' },
-  loan_amount:     { label: 'Loan amount',        ph: 'e.g. $2,000' },
-  total_fee:       { label: 'Total project fee',  ph: 'e.g. $1,500' },
-  max_budget:      { label: 'Max budget',         ph: 'e.g. $800/month' },
-  max_rate:        { label: 'Max hourly rate',    ph: 'e.g. $20/hr' },
-  available_from:  { label: 'Available from',     ph: 'e.g. July 1, 2026' },
-  move_in:         { label: 'Ideal move-in',      ph: 'e.g. July 1, 2026' },
-  availability:    { label: 'Availability',       ph: 'e.g. Weekdays 8am–4pm' },
-  frequency:       { label: 'How often',          ph: 'e.g. Weekly' },
-  repay_by:        { label: 'Repay by',           ph: 'e.g. December 1, 2026' },
-  subject:         { label: 'Subject / skill',    ph: 'e.g. Math, Piano' },
-  description:     { label: 'Description',        ph: 'Tell people more…', textarea: true },
+  title:          { label: 'Listing title',  ph: 'e.g. Sunny room near city centre' },
+  location:       { label: 'City or area',   ph: 'e.g. Austin, TX', autocomplete: true },
+  availability:   { label: 'Availability',   ph: 'e.g. Weekdays 8am–4pm' },
+  frequency:      { label: 'How often',      ph: 'e.g. Weekly' },
+  available_from: { label: 'Available from', date: true },
+  move_in:        { label: 'Ideal move-in',  date: true },
+  repay_by:       { label: 'Repay by',       date: true },
+  subject:        { label: 'Subject / skill', ph: 'e.g. Math, Piano' },
+  description:    { label: 'Description',    ph: 'Tell people more…', textarea: true },
 }
 
 // ── Shared sub-components ─────────────────────────────────────────────────
 function Topbar({ onBack, right }) {
-  const navigate = useNavigate()
   return (
     <div style={{
       display: 'flex', alignItems: 'center', justifyContent: 'space-between',
       padding: '13px 16px', background: bg,
       borderBottom: `1px solid ${bdr}`, flexShrink: 0,
     }}>
-      <button onClick={onBack} style={{ background: 'none', border: 'none', cursor: 'pointer', color: t2, padding: 6, borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <button onClick={onBack} style={{ background: 'none', border: 'none', cursor: 'pointer', color: t2, padding: 6, borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: 44, minWidth: 44 }}>
         <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
           <path d="M11 4L6 9l5 5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
       </button>
-      <div onClick={() => navigate('/')} style={{ cursor: 'pointer', fontFamily: serif, fontSize: 17, fontWeight: 500, color: text }}>
-        Clear<b style={{ color: acc, fontWeight: 500 }}>Sign</b>
-      </div>
-      <div style={{ width: 34, fontSize: 12, color: t3, fontWeight: 600, textAlign: 'right' }}>
+      <div style={{ width: 60, fontSize: 12, color: t3, fontWeight: 600, textAlign: 'right' }}>
         {right}
       </div>
     </div>
@@ -109,71 +148,119 @@ function FooterBtn({ label, disabled, onClick }) {
   )
 }
 
-// ── Bottom nav (mirrors Discover, post tab active) ─────────────────────────
-const NAV_TABS = [
-  { id: 'discover', path: '/',            label: 'Find',
-    icon: (on) => <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><circle cx="9" cy="9" r="6" stroke={on ? acc : t3} strokeWidth="1.4"/><path d="M14 14l3 3" stroke={on ? acc : t3} strokeWidth="1.4" strokeLinecap="round"/></svg> },
-  { id: 'messages', path: '/messages',    label: 'Messages',
-    icon: (on) => <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M3 4h14v10a1 1 0 01-1 1H4a1 1 0 01-1-1V4z" stroke={on ? acc : t3} strokeWidth="1.4"/><path d="M6 8h8M6 11h5" stroke={on ? acc : t3} strokeWidth="1.3" strokeLinecap="round"/></svg> },
-  { id: 'post',     path: '/post',        label: 'Post',
-    icon: (on) => <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="8" stroke={on ? acc : t3} strokeWidth="1.4"/><path d="M10 6v8M6 10h8" stroke={on ? acc : t3} strokeWidth="1.4" strokeLinecap="round"/></svg> },
-  { id: 'vault',    path: '/vault',       label: 'Vault',
-    icon: (on) => <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><rect x="3" y="3" width="14" height="14" rx="2" stroke={on ? acc : t3} strokeWidth="1.4"/><path d="M7 10l2.5 2.5L13 8" stroke={on ? acc : t3} strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/></svg> },
-  { id: 'profile',  path: '/profile',     label: 'Profile',
-    icon: (on) => <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="7" r="3.5" stroke={on ? acc : t3} strokeWidth="1.4"/><path d="M4 17c0-3.3 2.7-6 6-6s6 2.7 6 6" stroke={on ? acc : t3} strokeWidth="1.4" strokeLinecap="round"/></svg> },
-]
+const TODAY = new Date().toISOString().split('T')[0]
 
-function NavBar({ active }) {
-  const navigate = useNavigate()
+const baseInput = {
+  width: '100%', background: bg3, border: `1px solid ${bdr}`,
+  borderRadius: 8, padding: '11px 13px', fontSize: 14,
+  fontFamily: sans, color: text, outline: 'none',
+  transition: 'border-color 0.18s', resize: 'none',
+  WebkitAppearance: 'none', boxSizing: 'border-box', colorScheme: 'dark',
+}
+
+const labelStyle = {
+  display: 'block', fontSize: 11, fontWeight: 700, color: t2,
+  textTransform: 'uppercase', letterSpacing: '0.6px', marginBottom: 6,
+}
+
+const selectStyle = {
+  background: bg3, border: `1px solid ${bdr}`, borderRadius: 8,
+  padding: '11px 10px', fontSize: 13, fontFamily: sans, color: text,
+  outline: 'none', cursor: 'pointer', appearance: 'none', WebkitAppearance: 'none',
+  colorScheme: 'dark',
+}
+
+function PriceField({ answers, setAnswer, subtype }) {
+  const currency = answers.price_currency || 'USD'
+  const period   = answers.price_period   || DEFAULT_PERIOD[subtype] || 'monthly'
+  const amount   = answers.price || ''
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', borderTop: `1px solid ${bdr}`, background: bg, flexShrink: 0, paddingBottom: 'env(safe-area-inset-bottom)' }}>
-      {NAV_TABS.map(({ id, path, label, icon }) => {
-        const on = active === id
-        return (
-          <button key={id} onClick={() => navigate(path)} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 3, padding: '8px 4px', border: 'none', background: 'none', cursor: 'pointer', fontFamily: sans }}>
-            {icon(on)}
-            <span style={{ fontSize: 10, fontWeight: 600, color: on ? acc : t3 }}>{label}</span>
-          </button>
-        )
-      })}
+    <div style={{ marginBottom: 14 }}>
+      <label style={labelStyle}>Price</label>
+      <div style={{ display: 'flex', gap: 6 }}>
+        <select
+          value={currency}
+          onChange={e => setAnswer('price_currency', e.target.value)}
+          style={{ ...selectStyle, flexShrink: 0, width: 90 }}
+        >
+          {CURRENCIES.map(c => (
+            <option key={c.code} value={c.code}>{c.code} {c.symbol}</option>
+          ))}
+        </select>
+        <input
+          type="number" min="0" step="any" placeholder="0"
+          value={amount}
+          onChange={e => setAnswer('price', e.target.value)}
+          onFocus={e => e.target.style.borderColor = acc}
+          onBlur={e => e.target.style.borderColor = bdr}
+          style={{ ...baseInput, flex: 1 }}
+        />
+        <select
+          value={period}
+          onChange={e => setAnswer('price_period', e.target.value)}
+          style={{ ...selectStyle, flexShrink: 0, width: 120 }}
+        >
+          {PERIODS.map(p => (
+            <option key={p.value} value={p.value}>{p.label}</option>
+          ))}
+        </select>
+      </div>
     </div>
   )
 }
 
-// ── Field input ────────────────────────────────────────────────────────────
 function Field({ fieldKey, meta, value, onChange }) {
-  const inputStyle = {
-    width: '100%', background: bg3, border: `1px solid ${bdr}`,
-    borderRadius: 8, padding: '11px 13px', fontSize: 14,
-    fontFamily: sans, color: text, outline: 'none',
-    transition: 'border-color 0.18s', resize: 'none',
-    WebkitAppearance: 'none', boxSizing: 'border-box',
-  }
-  return (
-    <div style={{ marginBottom: 14 }}>
-      <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: t2, textTransform: 'uppercase', letterSpacing: '0.6px', marginBottom: 6 }}>
-        {meta.label}
-      </label>
-      {meta.textarea ? (
-        <textarea
-          rows={4}
-          placeholder={meta.ph}
-          value={value}
+  if (meta.date) {
+    return (
+      <div style={{ marginBottom: 14 }}>
+        <label style={labelStyle}>{meta.label}</label>
+        <input
+          type="date" min={TODAY} value={value}
           onChange={e => onChange(fieldKey, e.target.value)}
           onFocus={e => e.target.style.borderColor = acc}
           onBlur={e => e.target.style.borderColor = bdr}
-          style={{ ...inputStyle, display: 'block' }}
+          style={{ ...baseInput, display: 'block' }}
         />
-      ) : (
+      </div>
+    )
+  }
+  if (meta.autocomplete) {
+    return (
+      <div style={{ marginBottom: 14 }}>
+        <label style={labelStyle}>{meta.label}</label>
         <input
-          type="text"
-          placeholder={meta.ph}
-          value={value}
+          type="text" list="cs-cities" placeholder={meta.ph} value={value}
           onChange={e => onChange(fieldKey, e.target.value)}
           onFocus={e => e.target.style.borderColor = acc}
           onBlur={e => e.target.style.borderColor = bdr}
           autoComplete="off"
-          style={inputStyle}
+          style={{ ...baseInput, display: 'block' }}
+        />
+        <datalist id="cs-cities">
+          {CITY_LIST.map(c => <option key={c} value={c} />)}
+        </datalist>
+      </div>
+    )
+  }
+  return (
+    <div style={{ marginBottom: 14 }}>
+      <label style={labelStyle}>{meta.label}</label>
+      {meta.textarea ? (
+        <textarea
+          rows={4} placeholder={meta.ph} value={value}
+          onChange={e => onChange(fieldKey, e.target.value)}
+          onFocus={e => e.target.style.borderColor = acc}
+          onBlur={e => e.target.style.borderColor = bdr}
+          style={{ ...baseInput, display: 'block' }}
+        />
+      ) : (
+        <input
+          type="text" placeholder={meta.ph} value={value}
+          onChange={e => onChange(fieldKey, e.target.value)}
+          onFocus={e => e.target.style.borderColor = acc}
+          onBlur={e => e.target.style.borderColor = bdr}
+          autoComplete="off"
+          style={{ ...baseInput, display: 'block' }}
         />
       )}
     </div>
@@ -257,7 +344,6 @@ export default function PostListing() {
   const navigate   = useNavigate()
   const user       = useAuth(s => s.user)
   const addListing = useListings(s => s.addListing)
-
   function pickCat(k) {
     setCat(k)
     setSubtype(null)
@@ -269,6 +355,7 @@ export default function PostListing() {
   function pickSub(k) {
     setSubtype(k)
     setSelectedTags([])
+    setAnswers(prev => ({ ...prev, price_period: DEFAULT_PERIOD[k] || 'monthly' }))
   }
 
   function toggleTag(tag) {
@@ -290,15 +377,18 @@ export default function PostListing() {
     const fields = LISTING_FIELDS[subtype] || ['title', 'location', 'description']
     const id = Math.random().toString(36).slice(2, 10)
     const listing = {
-      id,           // temporary local id; replaced by Supabase UUID after insert
-      ...Object.fromEntries(fields.map(f => [f, answers[f]?.trim() || ''])),
+      id,
+      ...Object.fromEntries(fields.filter(f => f !== 'price').map(f => [f, answers[f]?.trim() || ''])),
+      price:          answers.price?.trim() || '',
+      price_currency: answers.price_currency || 'USD',
+      price_period:   answers.price_period || DEFAULT_PERIOD[subtype] || 'monthly',
       cat,
       subcat:     subtype,
       tags:       selectedTags,
       ownerName:  user.name,
       ownerEmail: user.email,
       ownerColor: user.avatarColor,
-      ownerId:    user.id,  // UUID (crypto.randomUUID()) for Supabase FK
+      ownerId:    user.id,
       createdAt:  new Date().toISOString(),
       status:     'active',
       reviewCount: 0,
@@ -310,7 +400,7 @@ export default function PostListing() {
   }
 
   const wrap = (children, footer) => (
-    <div style={{ minHeight: '100svh', background: bg, display: 'flex', flexDirection: 'column', maxWidth: 480, margin: '0 auto', fontFamily: sans, fontSize: 15, color: text }}>
+    <div style={{ flex: 1, background: bg, display: 'flex', flexDirection: 'column', fontFamily: sans, fontSize: 15, color: text }}>
       {children}
       {footer}
     </div>
@@ -339,7 +429,6 @@ export default function PostListing() {
           ))}
         </div>
       </div>
-      <NavBar active="post" />
     </>
   )
 
@@ -390,15 +479,11 @@ export default function PostListing() {
         <div style={{ fontFamily: serif, fontSize: 24, fontWeight: 300, lineHeight: 1.2, color: text, marginBottom: 7 }}>Tell people more</div>
         <div style={{ fontSize: 13, color: t2, marginBottom: 22, lineHeight: 1.5 }}>More detail means more responses. Tags help people find you.</div>
 
-        {fields.map(f => (
-          <Field
-            key={f}
-            fieldKey={f}
-            meta={FIELD_META[f] || { label: f, ph: '' }}
-            value={answers[f] || ''}
-            onChange={setAnswer}
-          />
-        ))}
+        {fields.map(f =>
+          f === 'price'
+            ? <PriceField key="price" answers={answers} setAnswer={setAnswer} subtype={subtype} />
+            : <Field key={f} fieldKey={f} meta={FIELD_META[f] || { label: f, ph: '' }} value={answers[f] || ''} onChange={setAnswer} />
+        )}
 
         {tagCfg && (
           <>

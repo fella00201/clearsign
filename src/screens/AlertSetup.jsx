@@ -55,19 +55,17 @@ export default function AlertSetup() {
   }
 
   return (
-    <div style={{ minHeight: '100svh', background: bg, display: 'flex', flexDirection: 'column', maxWidth: 480, margin: '0 auto', fontFamily: sans, fontSize: 15, color: text }}>
+    <div style={{ flex: 1, background: bg, display: 'flex', flexDirection: 'column', fontFamily: sans, fontSize: 15, color: text }}>
 
       {/* Topbar */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '13px 16px', background: bg, borderBottom: `1px solid ${bdr}`, flexShrink: 0 }}>
-        <button onClick={() => navigate(-1)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: t2, padding: 6, borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <button onClick={() => navigate('/')} style={{ background: 'none', border: 'none', cursor: 'pointer', color: t2, padding: 6, borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: 44, minWidth: 44 }}>
           <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
             <path d="M11 4L6 9l5 5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
         </button>
-        <div onClick={() => navigate('/')} style={{ cursor: 'pointer', fontFamily: serif, fontSize: 17, fontWeight: 500, color: text }}>
-          Clear<b style={{ color: acc, fontWeight: 500 }}>Sign</b>
-        </div>
-        <div style={{ width: 30 }} />
+        <div style={{ fontSize: 14, fontWeight: 600, color: text }}>Alert Setup</div>
+        <div style={{ width: 44 }} />
       </div>
 
       {/* Body */}
