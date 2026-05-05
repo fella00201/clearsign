@@ -110,6 +110,7 @@ export default function Listing() {
 
   async function startMessage() {
     if (!user) return
+    if (user.email === listing.ownerEmail) return
     const UUID_RE = /^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/i
 
     // Try Supabase when listing has a real UUID (inserted post-migration)
