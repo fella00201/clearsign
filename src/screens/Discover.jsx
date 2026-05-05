@@ -76,6 +76,47 @@ function TagPill({ tag, subcat }) {
   )
 }
 
+function PageNav({ page, totalPages, onPage }) {
+  if (totalPages <= 1) return null
+  const pages = []
+  if (totalPages <= 7) {
+    for (let i = 1; i <= totalPages; i++) pages.push(i)
+  } else {
+    pages.push(1)
+    if (page > 3) pages.push('…')
+    for (let i = Math.max(2, page - 1); i <= Math.min(totalPages - 1, page + 1); i++) pages.push(i)
+    if (page < totalPages - 2) pages.push('…')
+    pages.push(totalPages)
+  }
+  const arrow = (label, onClick, disabled) => (
+    <button onClick={onClick} disabled={disabled} style={{
+      width: 30, height: 28, borderRadius: 6, border: `1px solid ${bdr}`,
+      background: 'none', color: disabled ? t3 : t2, fontSize: 16,
+      cursor: disabled ? 'default' : 'pointer', fontFamily: sans,
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      opacity: disabled ? 0.35 : 1, transition: 'all 0.18s',
+    }}>{label}</button>
+  )
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4 }}>
+      {arrow('‹', () => onPage(page - 1), page === 1)}
+      {pages.map((p, i) => typeof p === 'string'
+        ? <span key={`e${i}`} style={{ color: t3, fontSize: 12, padding: '0 2px', lineHeight: '28px' }}>…</span>
+        : (
+          <button key={p} onClick={() => p !== page && onPage(p)} style={{
+            minWidth: 30, height: 28, borderRadius: 6, padding: '0 6px',
+            border: `1px solid ${p === page ? acc : bdr}`,
+            background: p === page ? accbg : 'none',
+            color: p === page ? acc : t2, fontSize: 12, fontWeight: p === page ? 700 : 400,
+            cursor: p === page ? 'default' : 'pointer', fontFamily: sans, transition: 'all 0.18s',
+          }}>{p}</button>
+        )
+      )}
+      {arrow('›', () => onPage(page + 1), page === totalPages)}
+    </div>
+  )
+}
+
 function ListingCard({ listing, onNavigate }) {
   const cfg = CATS[listing.cat]
   const bs  = BADGE[cfg.badge]
@@ -209,6 +250,12 @@ export default function Discover() {
 
   const noAlerts = user && (!user.alerts || !user.alerts.length)
   const [searchFocused, setSearchFocused] = useState(false)
+  const [perPage, setPerPage] = useState(20)
+  const [page, setPage]       = useState(1)
+  useEffect(() => { setPage(1) }, [searchQ, filterCat, filterTags, perPage])
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / perPage))
+  const paginated  = filtered.slice((page - 1) * perPage, page * perPage)
 
   // ── Shared search bar ──────────────────────────────────────────────────
   const searchBar = (
@@ -403,22 +450,40 @@ export default function Discover() {
               </div>
             )}
 
-            {/* Count header */}
-            <div style={{ fontSize: 11, fontWeight: 700, color: t3, textTransform: 'uppercase', letterSpacing: '0.8px', padding: '10px 20px 12px' }}>
-              {filtered.length} listing{filtered.length !== 1 ? 's' : ''}
+            {/* Count + per-page selector */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 20px 8px' }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: t3, textTransform: 'uppercase', letterSpacing: '0.8px' }}>
+                {filtered.length} listing{filtered.length !== 1 ? 's' : ''}
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                <span style={{ fontSize: 11, color: t3, marginRight: 2 }}>Show</span>
+                {[10, 20, 50, 100].map(n => (
+                  <button key={n} onClick={() => setPerPage(n)} style={{
+                    padding: '3px 8px', borderRadius: 6,
+                    border: `1px solid ${perPage === n ? acc : bdr}`,
+                    background: perPage === n ? accbg : 'transparent',
+                    color: perPage === n ? acc : t3, fontSize: 11, fontWeight: 600,
+                    cursor: 'pointer', fontFamily: sans, transition: 'all 0.18s',
+                  }}>{n}</button>
+                ))}
+              </div>
             </div>
 
             {/* 2-column grid */}
             {filtered.length > 0 ? (
-              <div style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(2, 1fr)',
-                gap: 14,
-                padding: '0 20px 40px',
-                alignItems: 'start',
-              }}>
-                {filtered.map(l => <ListingCard key={l.id} listing={l} onNavigate={navigate} />)}
-              </div>
+              <>
+                {totalPages > 1 && (
+                  <div style={{ padding: '0 20px 10px' }}>
+                    <PageNav page={page} totalPages={totalPages} onPage={setPage} />
+                  </div>
+                )}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 14, padding: '0 20px', alignItems: 'start' }}>
+                  {paginated.map(l => <ListingCard key={l.id} listing={l} onNavigate={navigate} />)}
+                </div>
+                <div style={{ padding: '16px 20px 40px' }}>
+                  <PageNav page={page} totalPages={totalPages} onPage={setPage} />
+                </div>
+              </>
             ) : (
               emptyState
             )}
@@ -500,18 +565,44 @@ export default function Discover() {
             </div>
           )}
 
-          {/* Count header */}
-          <div style={{ fontSize: 12, color: t3, padding: '4px 16px 8px' }}>
-            {filtered.length} listing{filtered.length !== 1 ? 's' : ''} near you
+          {/* Count + per-page selector */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '4px 16px 8px' }}>
+            <div style={{ fontSize: 12, color: t3 }}>
+              {filtered.length} listing{filtered.length !== 1 ? 's' : ''} near you
+            </div>
+            <select
+              value={perPage}
+              onChange={e => setPerPage(Number(e.target.value))}
+              style={{
+                background: bg3, border: `1px solid ${bdr}`, borderRadius: 6,
+                color: t2, fontSize: 11, padding: '3px 6px', fontFamily: sans, cursor: 'pointer',
+              }}
+            >
+              {[10, 20, 50, 100].map(n => <option key={n} value={n}>{n} per page</option>)}
+            </select>
           </div>
 
+          {/* Top page nav */}
+          {totalPages > 1 && (
+            <div style={{ padding: '0 16px 8px' }}>
+              <PageNav page={page} totalPages={totalPages} onPage={setPage} />
+            </div>
+          )}
+
           {/* Listing cards / empty state */}
-          <div style={{ padding: '0 16px 90px' }}>
-            {filtered.length > 0
-              ? filtered.map(l => <ListingCard key={l.id} listing={l} onNavigate={navigate} />)
+          <div style={{ padding: '0 16px 16px' }}>
+            {paginated.length > 0
+              ? paginated.map(l => <ListingCard key={l.id} listing={l} onNavigate={navigate} />)
               : emptyState
             }
           </div>
+
+          {/* Bottom page nav */}
+          {totalPages > 1 && (
+            <div style={{ padding: '0 16px 90px' }}>
+              <PageNav page={page} totalPages={totalPages} onPage={setPage} />
+            </div>
+          )}
         </div>
       )}
 
