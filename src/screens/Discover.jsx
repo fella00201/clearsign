@@ -290,7 +290,7 @@ export default function Discover() {
   return (
     <div style={{
       flex: 1, background: bg,
-      display: 'flex', flexDirection: 'column',
+      display: 'flex', flexDirection: 'column', overflow: 'hidden',
       fontFamily: sans, fontSize: 15, color: text,
     }}>
 
