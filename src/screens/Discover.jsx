@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useListings } from '../store/useListings'
 import { useAuth } from '../store/useAuth'
 import { CATS, TAGS, ALL_POPULAR_TAGS } from '../data/categories'
-import NavBar from '../components/NavBar'
+import { useIsDesktop } from '../components/NavBar'
 
 // ── Design tokens ──────────────────────────────────────────────────────────
 const bg    = '#0d0d11'
@@ -29,19 +29,6 @@ const BADGE = {
   'b-service': { bg: '#220d18', color: '#ff7eb3', border: '#3a1528' },
   'b-sale':    { bg: '#231a04', color: '#f5a623', border: '#3a2a08' },
   'b-seek':    { bg: '#0c2018', color: '#3ecf7a', border: '#183a28' },
-}
-
-// ── Responsive hook ────────────────────────────────────────────────────────
-function useIsDesktop() {
-  const [isDesktop, setIsDesktop] = useState(
-    () => typeof window !== 'undefined' && window.innerWidth >= 1024
-  )
-  useEffect(() => {
-    const fn = () => setIsDesktop(window.innerWidth >= 1024)
-    window.addEventListener('resize', fn)
-    return () => window.removeEventListener('resize', fn)
-  }, [])
-  return isDesktop
 }
 
 // ── Helpers ────────────────────────────────────────────────────────────────
@@ -92,9 +79,13 @@ function TagPill({ tag, subcat }) {
 function ListingCard({ listing, onNavigate }) {
   const cfg = CATS[listing.cat]
   const bs  = BADGE[cfg.badge]
-  const price = listing.price_per_month || listing.price_per_day || listing.hourly_rate ||
+  const CSYM = { USD:'$',EUR:'€',GBP:'£',SEK:'kr',NOK:'kr',DKK:'kr',CHF:'Fr',CAD:'CA$',AUD:'A$',NZD:'NZ$',JPY:'¥',CNY:'¥',INR:'₹',BRL:'R$',MXN:'MX$',SGD:'S$',HKD:'HK$',ZAR:'R' }
+  const legacyPrice = listing.price_per_month || listing.price_per_day || listing.hourly_rate ||
     listing.asking_price || listing.loan_amount || listing.total_fee ||
     listing.max_budget || listing.max_rate || ''
+  const price = listing.price
+    ? `${CSYM[listing.price_currency] || '$'}${listing.price}${listing.price_period && listing.price_period !== 'one-time' ? '/' + listing.price_period.replace('per ', '') : ''}`
+    : legacyPrice
   const tags      = listing.tags || []
   const shownTags = tags.slice(0, 3)
 
@@ -218,7 +209,6 @@ export default function Discover() {
 
   const noAlerts = user && (!user.alerts || !user.alerts.length)
   const [searchFocused, setSearchFocused] = useState(false)
-  const [fabHover, setFabHover]           = useState(false)
 
   // ── Shared search bar ──────────────────────────────────────────────────
   const searchBar = (
@@ -299,21 +289,17 @@ export default function Discover() {
 
   return (
     <div style={{
-      minHeight: '100svh', background: bg,
+      flex: 1, background: bg,
       display: 'flex', flexDirection: 'column',
-      ...(isDesktop ? { marginLeft: 220 } : { maxWidth: 480, margin: '0 auto' }),
       fontFamily: sans, fontSize: 15, color: text,
     }}>
 
       {/* ── Top bar ── */}
       <div style={{
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        display: 'flex', alignItems: 'center', justifyContent: 'flex-end',
         padding: '13px 16px', background: bg,
         borderBottom: `1px solid ${bdr}`, flexShrink: 0, zIndex: 10,
       }}>
-        <div onClick={() => navigate('/')} style={{ cursor: 'pointer', fontFamily: serif, fontSize: 20, fontWeight: 600, color: text }}>
-          Clear<b style={{ color: acc, fontWeight: 600 }}>Sign</b>
-        </div>
         <button
           onClick={() => navigate('/notifications')}
           style={{ background: 'none', border: 'none', cursor: 'pointer', color: t2, padding: 6, borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', transition: 'all 0.18s' }}
@@ -529,37 +515,6 @@ export default function Discover() {
         </div>
       )}
 
-      {/* FAB — Post listing */}
-      <div
-        onMouseEnter={() => setFabHover(true)}
-        onMouseLeave={() => setFabHover(false)}
-        style={{ position: 'fixed', bottom: isDesktop ? 28 : 80, right: 20, display: 'flex', alignItems: 'center', gap: 8, zIndex: 100 }}
-      >
-        {fabHover && isDesktop && (
-          <div style={{ background: bg, border: `1px solid ${bdr}`, borderRadius: 999, padding: '7px 14px', fontSize: 12, fontWeight: 600, color: text, whiteSpace: 'nowrap', boxShadow: '0 4px 12px rgba(0,0,0,0.5)', pointerEvents: 'none' }}>
-            Post listing
-          </div>
-        )}
-        <button
-          onClick={() => navigate('/post')}
-          style={{
-            width: 52, height: 52, borderRadius: '50%',
-            background: fabHover ? acc2 : acc,
-            border: 'none', cursor: 'pointer',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            boxShadow: '0 4px 16px rgba(91,143,255,0.4)',
-            transform: fabHover ? 'scale(1.08)' : 'scale(1)',
-            transition: 'all 0.18s ease',
-            flexShrink: 0,
-          }}
-        >
-          <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
-            <path d="M11 4v14M4 11h14" stroke="#fff" strokeWidth="2.2" strokeLinecap="round" />
-          </svg>
-        </button>
-      </div>
-
-      <NavBar active="discover" />
     </div>
   )
 }

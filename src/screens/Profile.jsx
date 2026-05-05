@@ -1,9 +1,7 @@
-import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../store/useAuth'
 import { useContracts } from '../store/useContracts'
 import { CATS, TAGS } from '../data/categories'
-import NavBar from '../components/NavBar'
 
 const bg    = '#0d0d11'
 const bg2   = '#141418'
@@ -18,14 +16,6 @@ const acc   = '#5b8fff'
 const amber = '#f5a623'
 const sans  = "'Inter', sans-serif"
 const serif = "'Sora', sans-serif"
-
-// Light-mode surface colours (applied via body.light CSS)
-const LIGHT = {
-  bg:   '#f8f8f5',
-  bg2:  '#ffffff',
-  bg3:  '#f0f0ec',
-  text: '#0f0e17',
-}
 
 const BADGE = {
   'b-rental':  { bg: '#1a2d4a', color: '#7eb8ff', border: '#1e3560' },
@@ -106,34 +96,11 @@ function ListingCard({ listing, onNavigate }) {
   )
 }
 
-// ── Theme helpers ──────────────────────────────────────────────────────────
-function applyTheme(theme) {
-  const root = document.documentElement
-  if (theme === 'light') {
-    document.body.classList.add('light')
-    root.style.setProperty('--cs-bg',   LIGHT.bg)
-    root.style.setProperty('--cs-bg2',  LIGHT.bg2)
-    root.style.setProperty('--cs-bg3',  LIGHT.bg3)
-    root.style.setProperty('--cs-text', LIGHT.text)
-  } else {
-    document.body.classList.remove('light')
-    root.style.removeProperty('--cs-bg')
-    root.style.removeProperty('--cs-bg2')
-    root.style.removeProperty('--cs-bg3')
-    root.style.removeProperty('--cs-text')
-  }
-}
-
 export default function Profile() {
   const navigate   = useNavigate()
   const user       = useAuth(s => s.user)
   const signout    = useAuth(s => s.signout)
   const contracts  = useContracts(s => s.contracts)
-
-  const [theme, setTheme] = useState(
-    () => localStorage.getItem('cs_theme') || 'dark'
-  )
-
   let myListings = []
   try {
     const all = JSON.parse(localStorage.getItem('cs_listings_user') || '[]')
@@ -149,22 +116,18 @@ export default function Profile() {
     navigate('/auth', { replace: true })
   }
 
-  function toggleTheme() {
-    const next = theme === 'dark' ? 'light' : 'dark'
-    setTheme(next)
-    localStorage.setItem('cs_theme', next)
-    applyTheme(next)
-  }
-
   return (
-    <div style={{ minHeight: '100svh', background: bg, display: 'flex', flexDirection: 'column', maxWidth: 480, margin: '0 auto', fontFamily: sans, fontSize: 15, color: text }}>
+    <div style={{ flex: 1, background: bg, display: 'flex', flexDirection: 'column', fontFamily: sans, fontSize: 15, color: text }}>
 
       {/* Topbar */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '13px 16px', background: bg, borderBottom: `1px solid ${bdr}`, flexShrink: 0 }}>
-        <div onClick={() => navigate('/')} style={{ cursor: 'pointer', fontFamily: serif, fontSize: 20, fontWeight: 600, color: text }}>
-          Clear<b style={{ color: acc, fontWeight: 600 }}>Sign</b>
-        </div>
-        <div style={{ width: 34 }} />
+        <button onClick={() => navigate('/')} style={{ background: 'none', border: 'none', cursor: 'pointer', color: t2, padding: 6, borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: 44, minWidth: 44 }}>
+          <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+            <path d="M11 4L6 9l5 5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </button>
+        <div style={{ fontSize: 14, fontWeight: 600, color: text }}>Profile</div>
+        <div style={{ width: 44 }} />
       </div>
 
       {/* Body */}
@@ -204,43 +167,6 @@ export default function Profile() {
           </div>
         )}
 
-        {/* ── Settings ── */}
-        <div style={{ marginTop: 24, marginBottom: 16 }}>
-          <div style={{ fontSize: 11, fontWeight: 700, color: t3, textTransform: 'uppercase', letterSpacing: '0.8px', marginBottom: 10 }}>
-            Appearance
-          </div>
-          <div style={{ background: bg3, border: `1px solid ${bdr}`, borderRadius: 14, padding: '0 16px' }}>
-            <div style={{
-              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-              padding: '14px 0', minHeight: 44,
-            }}>
-              <div>
-                <div style={{ fontSize: 14, fontWeight: 600, color: text }}>Theme</div>
-                <div style={{ fontSize: 12, color: t2, marginTop: 2 }}>
-                  {theme === 'light' ? 'Light mode' : 'Dark mode'}
-                </div>
-              </div>
-              {/* Sun / Moon toggle */}
-              <button
-                onClick={toggleTheme}
-                title={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}
-                style={{
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  width: 48, height: 48, borderRadius: 12,
-                  border: `1px solid ${bdr}`,
-                  background: theme === 'light' ? '#f5a62322' : bg4,
-                  cursor: 'pointer', fontSize: 22,
-                  transition: 'all 0.22s ease',
-                }}
-                onMouseEnter={e => { e.currentTarget.style.borderColor = bdr2 }}
-                onMouseLeave={e => { e.currentTarget.style.borderColor = bdr }}
-              >
-                {theme === 'light' ? '🌙' : '☀️'}
-              </button>
-            </div>
-          </div>
-        </div>
-
         {/* Sign out */}
         <div>
           <button
@@ -260,7 +186,6 @@ export default function Profile() {
         </div>
       </div>
 
-      <NavBar active="profile" />
     </div>
   )
 }

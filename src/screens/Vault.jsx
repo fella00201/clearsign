@@ -2,7 +2,6 @@ import { useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useContracts } from '../store/useContracts'
 import { useAuth } from '../store/useAuth'
-import NavBar from '../components/NavBar'
 
 const bg    = '#0d0d11'
 const bg2   = '#141418'
@@ -46,7 +45,6 @@ export default function Vault() {
   const contracts      = useContracts(s => s.contracts)
   const loadContracts  = useContracts(s => s.loadContracts)
   const setActiveDoc   = useContracts(s => s.setActiveDoc)
-
   useEffect(() => { loadContracts(user?.email) }, [loadContracts, user?.email])
 
   const mine = contracts.filter(c =>
@@ -59,14 +57,17 @@ export default function Vault() {
   }
 
   return (
-    <div style={{ minHeight: '100svh', background: bg, display: 'flex', flexDirection: 'column', maxWidth: 480, margin: '0 auto', fontFamily: sans, fontSize: 15, color: text }}>
+    <div style={{ flex: 1, background: bg, display: 'flex', flexDirection: 'column', fontFamily: sans, fontSize: 15, color: text }}>
 
       {/* Topbar */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '13px 16px', background: bg, borderBottom: `1px solid ${bdr}`, flexShrink: 0 }}>
-        <div onClick={() => navigate('/')} style={{ cursor: 'pointer', fontFamily: serif, fontSize: 20, fontWeight: 500, color: text }}>
-          Clear<b style={{ color: acc, fontWeight: 500 }}>Sign</b>
-        </div>
-        <div style={{ fontSize: 12, color: t3 }}>{mine.length} doc{mine.length !== 1 ? 's' : ''}</div>
+        <button onClick={() => navigate('/')} style={{ background: 'none', border: 'none', cursor: 'pointer', color: t2, padding: 6, borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: 44, minWidth: 44 }}>
+          <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+            <path d="M11 4L6 9l5 5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </button>
+        <div style={{ fontSize: 14, fontWeight: 600, color: text }}>Vault</div>
+        <div style={{ fontSize: 12, color: t3, width: 44, textAlign: 'right' }}>{mine.length} doc{mine.length !== 1 ? 's' : ''}</div>
       </div>
 
       {/* Body */}
@@ -149,7 +150,6 @@ export default function Vault() {
         )}
       </div>
 
-      <NavBar active="vault" />
     </div>
   )
 }
