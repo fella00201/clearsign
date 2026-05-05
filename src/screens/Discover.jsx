@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useListings } from '../store/useListings'
 import { useAuth } from '../store/useAuth'
@@ -252,7 +252,9 @@ export default function Discover() {
   const [searchFocused, setSearchFocused] = useState(false)
   const [perPage, setPerPage] = useState(20)
   const [page, setPage]       = useState(1)
+  const scrollRef = useRef(null)
   useEffect(() => { setPage(1) }, [searchQ, filterCat, filterTags, perPage])
+  useEffect(() => { scrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' }) }, [page])
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / perPage))
   const paginated  = filtered.slice((page - 1) * perPage, page * perPage)
@@ -428,7 +430,7 @@ export default function Discover() {
           </div>
 
           {/* Main content */}
-          <div style={{ flex: 1, overflowY: 'auto', WebkitOverflowScrolling: 'touch', display: 'flex', flexDirection: 'column' }}>
+          <div ref={scrollRef} style={{ flex: 1, overflowY: 'auto', WebkitOverflowScrolling: 'touch', display: 'flex', flexDirection: 'column' }}>
             {/* Search bar */}
             <div style={{ padding: '16px 20px 8px' }}>
               {searchBar}
@@ -491,7 +493,7 @@ export default function Discover() {
         </div>
       ) : (
         // ── Mobile layout ───────────────────────────────────────────────────
-        <div style={{ flex: 1, overflowY: 'auto', WebkitOverflowScrolling: 'touch' }}>
+        <div ref={scrollRef} style={{ flex: 1, overflowY: 'auto', WebkitOverflowScrolling: 'touch' }}>
 
           {/* Search bar */}
           <div style={{ margin: '12px 16px 4px' }}>
