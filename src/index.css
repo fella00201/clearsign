@@ -58,8 +58,14 @@
   --cs-text: #eeedf5;
 }
 
+html {
+  height: 100%;
+}
+
 body {
   margin: 0;
+  height: 100%;
+  overflow: hidden;
   background: var(--cs-bg);
   color: var(--cs-text);
   transition: background 0.25s ease, color 0.25s ease;
@@ -92,7 +98,8 @@ body:not(.light) {
   margin: 0 auto;
   text-align: center;
   border-inline: 1px solid var(--border);
-  min-height: 100svh;
+  height: 100%;
+  overflow: hidden;
   display: flex;
   flex-direction: column;
   box-sizing: border-box;
