@@ -105,7 +105,7 @@ const FIELD_META = {
 }
 
 // ── Shared sub-components ─────────────────────────────────────────────────
-function Topbar({ onBack, right }) {
+function Topbar({ onBack, right, rightEl }) {
   return (
     <div style={{
       display: 'flex', alignItems: 'center', justifyContent: 'space-between',
@@ -117,9 +117,11 @@ function Topbar({ onBack, right }) {
           <path d="M11 4L6 9l5 5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
       </button>
-      <div style={{ width: 60, fontSize: 12, color: t3, fontWeight: 600, textAlign: 'right' }}>
-        {right}
-      </div>
+      {rightEl !== undefined ? rightEl : (
+        <div style={{ width: 60, fontSize: 12, color: t3, fontWeight: 600, textAlign: 'right' }}>
+          {right}
+        </div>
+      )}
     </div>
   )
 }
@@ -400,7 +402,7 @@ export default function PostListing() {
   }
 
   const wrap = (children, footer) => (
-    <div style={{ flex: 1, background: bg, display: 'flex', flexDirection: 'column', fontFamily: sans, fontSize: 15, color: text }}>
+    <div style={{ flex: 1, background: bg, display: 'flex', flexDirection: 'column', overflow: 'hidden', fontFamily: sans, fontSize: 15, color: text }}>
       {children}
       {footer}
     </div>
@@ -473,7 +475,22 @@ export default function PostListing() {
 
   return wrap(
     <>
-      <Topbar onBack={() => setStep(2)} right="Step 3 of 3" />
+      <Topbar
+        onBack={() => setStep(2)}
+        rightEl={
+          <button
+            onClick={submit}
+            style={{
+              background: acc, color: '#fff', border: 'none',
+              borderRadius: 10, padding: '8px 16px',
+              fontSize: 13, fontWeight: 600, cursor: 'pointer',
+              fontFamily: sans, minHeight: 36,
+            }}
+          >
+            Post listing →
+          </button>
+        }
+      />
       <div style={{ flex: 1, overflowY: 'auto', padding: 16 }}>
         <div style={{ fontSize: 11, fontWeight: 700, color: acc, letterSpacing: '0.8px', textTransform: 'uppercase', marginBottom: 8 }}>Step 3 of 3 — details</div>
         <div style={{ fontFamily: serif, fontSize: 24, fontWeight: 300, lineHeight: 1.2, color: text, marginBottom: 7 }}>Tell people more</div>
@@ -534,7 +551,6 @@ export default function PostListing() {
           <p style={{ fontSize: 13, color: '#ff5b5b', marginBottom: 10 }}>{error}</p>
         )}
       </div>
-    </>,
-    <FooterBtn label="Post listing →" disabled={false} onClick={submit} />
+    </>
   )
 }
