@@ -4,11 +4,8 @@ import { CATS } from '../data/categories'
 const EXCLUDED = ['id', 'cat', 'subcat', 'ownerName', 'ownerColor', 'ownerEmail',
   'createdAt', 'status', 'reviewCount', 'avgRating']
 
-export async function generateContract(listing, userName, userRole) {
+export async function generateContract(listing, providerName, seekerName) {
   const subLabel = CATS[listing.cat]?.sub?.[listing.subcat]?.label || listing.cat
-  const isSeeker   = userRole === 'seeker'
-  const providerName = isSeeker ? listing.ownerName : userName
-  const seekerName   = isSeeker ? userName : listing.ownerName
 
   const details = Object.entries(listing)
     .filter(([k]) => !EXCLUDED.includes(k))
