@@ -21,8 +21,19 @@ const UUID_RE = /^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/i
 // makes the typing area read as an input field at a glance.
 const INPUT_BG  = '#EAEAE6'
 const INPUT_BDR = '#D6D5CF'
-const INPUT_MIN_H = 40
-const INPUT_MAX_H = 100
+const INPUT_LINE_H = 20
+const INPUT_MIN_H = 40                        // padding(20) + 1 line
+const INPUT_MAX_H = 20 + INPUT_LINE_H * 3      // padding(20) + 3 lines — scroll only past this
+
+// Thin, arrow-less scrollbar that only the browser renders once content
+// actually overflows (i.e. once the 4th line is typed).
+const INPUT_SCROLLBAR_CSS = `
+.cs-chat-input { scrollbar-width: thin; scrollbar-color: ${INPUT_BDR} transparent; }
+.cs-chat-input::-webkit-scrollbar { width: 5px; }
+.cs-chat-input::-webkit-scrollbar-track { background: transparent; }
+.cs-chat-input::-webkit-scrollbar-thumb { background: ${INPUT_BDR}; border-radius: 999px; }
+.cs-chat-input::-webkit-scrollbar-button { display: none; width: 0; height: 0; }
+`
 
 function initials(name) {
   return name.split(' ').map(w => w[0] || '').slice(0, 2).join('').toUpperCase() || '?'
@@ -66,6 +77,13 @@ export default function Chat() {
 
   const scrollRef   = useRef(null)
   const textareaRef = useRef(null)
+
+  useEffect(() => {
+    const style = document.createElement('style')
+    style.textContent = INPUT_SCROLLBAR_CSS
+    document.head.appendChild(style)
+    return () => document.head.removeChild(style)
+  }, [])
 
   // Load thread + messages on mount / threadId change
   useEffect(() => {
@@ -386,6 +404,7 @@ export default function Chat() {
       }}>
         <textarea
           ref={textareaRef}
+          className="cs-chat-input"
           placeholder={`Message ${other.name}…`}
           value={input}
           rows={1}
@@ -396,7 +415,7 @@ export default function Chat() {
           onBlur={e => e.target.style.borderColor = INPUT_BDR}
           style={{
             flex: 1, background: INPUT_BG, border: `1px solid ${INPUT_BDR}`, borderRadius: 14,
-            padding: '10px 13px', fontSize: 14, fontFamily: sans, color: text,
+            padding: '10px 13px', fontSize: 14, lineHeight: `${INPUT_LINE_H}px`, fontFamily: sans, color: text,
             outline: 'none', resize: 'none', boxSizing: 'border-box',
             height: INPUT_MIN_H, minHeight: INPUT_MIN_H, maxHeight: INPUT_MAX_H, overflowY: 'auto',
             transition: 'border-color 0.18s',
