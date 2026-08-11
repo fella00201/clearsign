@@ -4,6 +4,7 @@ import { useContracts } from '../store/useContracts'
 import { useAuth } from '../store/useAuth'
 
 import { bg, bg2, bg3, bdr, text, t2, t3, acc, green, amber, sans, serif } from '../theme'
+import { TEMPLATE_LABELS } from '../data/contractTemplates'
 
 function initials(n) {
   return n.split(' ').map(w => w[0] || '').slice(0, 2).join('').toUpperCase() || '?'
@@ -145,13 +146,20 @@ export default function Contract() {
 
         {/* Amber disclaimer */}
         <div style={{ background: `${amber}22`, border: `1px solid ${amber}55`, borderRadius: 8, padding: '10px 12px', marginBottom: 12, fontSize: 12, color: amber, lineHeight: 1.5 }}>
-          AI-generated. For complex situations, consult an attorney.
+          Standard template for this listing type. Not a substitute for legal advice.
         </div>
 
         {/* Contract text */}
         <div style={{ background: bg2, border: `1px solid ${bdr}`, borderRadius: 14, padding: 16, fontSize: 12, lineHeight: 1.9, color: t2, whiteSpace: 'pre-wrap', fontFamily: 'Georgia, serif' }}>
           {contract.contractText}
         </div>
+
+        {contract.templateId && (
+          <div style={{ fontSize: 11, color: t3, marginTop: 8, textAlign: 'center' }}>
+            Template: {TEMPLATE_LABELS[contract.templateId] || contract.templateId}
+            {contract.templateVersion ? ` · v${contract.templateVersion}` : ''}
+          </div>
+        )}
       </div>
 
       {/* Bottom bar */}

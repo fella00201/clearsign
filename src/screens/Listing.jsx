@@ -358,12 +358,14 @@ export default function Listing() {
               if (generating || !user) return
               setGenerating(true)
               try {
-                const contractText = await generateContract(listing, user.name, listing.ownerName)
+                const { contractText, templateId, templateVersion } = await generateContract(listing, user.name, listing.ownerName)
                 const doc = {
                   id: Math.random().toString(36).slice(2, 12),
                   listingId: listing.id,
                   listingTitle: listing.title,
                   contractText,
+                  templateId,
+                  templateVersion,
                   status: 'pending_counterparty',
                   creatorEmail: user.email,
                   creatorName: user.name,
