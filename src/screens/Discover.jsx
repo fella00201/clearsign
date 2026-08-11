@@ -4,31 +4,13 @@ import { useListings } from '../store/useListings'
 import { useAuth } from '../store/useAuth'
 import { CATS, TAGS, ALL_POPULAR_TAGS } from '../data/categories'
 import { useIsDesktop } from '../components/NavBar'
-
-// ── Design tokens ──────────────────────────────────────────────────────────
-const bg    = '#0d0d11'
-const bg2   = '#141418'
-const bg3   = '#1e1e26'
-const bg4   = '#27272f'
-const bdr   = '#2a2a36'
-const bdr2  = '#3a3a4c'
-const text  = '#eeedf5'
-const t2    = '#9896b2'
-const t3    = '#56546c'
-const acc   = '#5b8fff'
-const acc2  = '#3d6ee0'
-const accbg = '#141f3c'
-const amber = '#f5a623'
-const red   = '#ff5b5b'
-const redbg = '#220d0d'
-const sans  = "'Inter', sans-serif"
-const serif = "'Sora', sans-serif"
+import { bg, bg2, bg3, bg4, bdr, bdr2, text, t2, t3, acc, acc2, accbg, amber, red, redbg, sans, serif, CAT_COLORS } from '../theme'
 
 const BADGE = {
-  'b-rental':  { bg: '#1a2d4a', color: '#7eb8ff', border: '#1e3560' },
-  'b-service': { bg: '#220d18', color: '#ff7eb3', border: '#3a1528' },
-  'b-sale':    { bg: '#231a04', color: '#f5a623', border: '#3a2a08' },
-  'b-seek':    { bg: '#0c2018', color: '#3ecf7a', border: '#183a28' },
+  'b-rental':  { bg: CAT_COLORS.rental.tint,  color: CAT_COLORS.rental.ink,  border: CAT_COLORS.rental.border },
+  'b-service': { bg: CAT_COLORS.service.tint, color: CAT_COLORS.service.ink, border: CAT_COLORS.service.border },
+  'b-sale':    { bg: CAT_COLORS.sale.tint,    color: CAT_COLORS.sale.ink,    border: CAT_COLORS.sale.border },
+  'b-seek':    { bg: CAT_COLORS.seek.tint,    color: CAT_COLORS.seek.ink,    border: CAT_COLORS.seek.border },
 }
 
 // ── Helpers ────────────────────────────────────────────────────────────────
@@ -62,7 +44,7 @@ function Stars({ rating, size = 14 }) {
 function TagPill({ tag, subcat }) {
   const cfg = subcat && TAGS[subcat]
     ? { bg: TAGS[subcat].color, color: TAGS[subcat].text }
-    : { bg: '#1e2630', color: '#7eb8ff' }
+    : { bg: bg4, color: t2 }
   return (
     <span style={{
       display: 'inline-flex', alignItems: 'center',
@@ -134,7 +116,7 @@ function ListingCard({ listing, onNavigate }) {
     <div
       onClick={() => onNavigate(`/listing/${listing.id}`)}
       style={{ background: bg2, border: `1px solid ${bdr}`, borderRadius: 14, padding: 16, cursor: 'pointer', transition: 'all 0.18s ease', display: 'flex', flexDirection: 'column' }}
-      onMouseEnter={e => { e.currentTarget.style.borderColor = bdr2; e.currentTarget.style.background = bg3; e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 8px 24px rgba(0,0,0,0.32)' }}
+      onMouseEnter={e => { e.currentTarget.style.borderColor = bdr2; e.currentTarget.style.background = bg3; e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 8px 24px rgba(42,36,32,0.16)' }}
       onMouseLeave={e => { e.currentTarget.style.borderColor = bdr; e.currentTarget.style.background = bg2; e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = 'none' }}
     >
       {/* Badge + price */}

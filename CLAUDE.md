@@ -44,25 +44,49 @@ supabase/
 - AI Assistant — floating chat panel in App.jsx
 
 ## Design tokens — always use these exact values
+
+**Source of truth is `src/theme.js` — import tokens from there, do not redefine
+them locally in a screen file.** ("Ledger" palette: warm paper + ink, adopted
+2026-08 to replace the original all-dark scheme.)
+
 ```js
-const bg    = '#0d0d11'   // page background
-const bg2   = '#141418'   // card background
-const bg3   = '#1e1e26'   // input background
-const bg4   = '#27272f'   // subtle surface
-const bdr   = '#2a2a36'   // border
-const bdr2  = '#3a3a4c'   // hover border
-const text  = '#eeedf5'   // primary text
-const t2    = '#9896b2'   // secondary text
-const t3    = '#56546c'   // tertiary text
-const acc   = '#5b8fff'   // accent blue
-const acc2  = '#3d6ee0'   // accent blue hover
-const accbg = '#141f3c'   // accent background
-const green = '#3ecf7a'   // success
-const amber = '#f5a623'   // warning
-const red   = '#ff5b5b'   // error
-const serif = "'Fraunces', serif"
-const sans  = "'Instrument Sans', sans-serif"
+import { bg, bg2, bg3, bg4, bdr, bdr2, text, t2, t3, acc, acc2, accbg, green, amber, red, redbg, serif, sans, CAT_COLORS } from '../theme'
+
+// bg    #F0ECE1   page background — warm paper
+// bg2   #FBF9F3   card background — raised paper
+// bg3   #F4EFE3   input / recessed surface
+// bg4   #E7E0D0   subtle surface — hover states, overflow chips
+// bdr   #DDD5C4   border
+// bdr2  #C9BEA6   hover border
+// text  #2A2420   primary text — ink
+// t2    #5C5347   secondary text
+// t3    #746A5C   tertiary text
+// acc   #9C3B2E   accent — wax-seal red
+// acc2  #7E2F24   accent hover / pressed
+// accbg #F4E3DD   accent tint background
+// green #3E6350   success / verified — ledger green
+// amber #855819   warning — ochre
+// red   #B8331F   error / destructive (kept visually distinct from acc)
+// redbg #F7E3DE   error tint background
+// serif "'Iowan Old Style', 'Palatino Linotype', Georgia, serif"
+// sans  "-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif"
 ```
+
+All text-on-`bg` pairs above are verified >=4.5:1 WCAG contrast — don't
+substitute an ad-hoc lighter tone for "subtle" text; use `t3`, it already
+passes.
+
+`CAT_COLORS` (`rental` / `service` / `sale` / `seek`, each `{ tint, ink, border }`)
+holds the per-category identity colors used for badges, tag pills, and
+category chips — see `src/data/categories.js` for how `TAGS` consumes them.
+
+### Migration status
+`src/theme.js`, `src/data/categories.js`, `src/index.css`, `index.html`,
+`src/screens/Discover.jsx`, and `src/components/NavBar.jsx` are on the Ledger
+palette. Every other screen still has its own hardcoded dark-palette consts
+at the top of the file — when touching any of them, replace that local const
+block with an import from `../theme` instead of leaving the old dark hex
+values in place.
 
 ## State management pattern
 ```js

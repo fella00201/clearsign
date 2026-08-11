@@ -25,3 +25,6 @@ dist-ssr
 .env
 .vercel
 .env*.local
+
+# Internal product / business strategy (not for public repo)
+docs/REVENUE_STRATEGY.md

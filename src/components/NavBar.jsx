@@ -4,20 +4,7 @@ import { useAuth } from '../store/useAuth'
 import { useMessages } from '../store/useMessages'
 import { supabase } from '../lib/supabase'
 import { callClaude } from '../lib/anthropic'
-
-const t2    = '#9896b2'
-const t3    = '#56546c'
-const acc   = '#5b8fff'
-const acc2  = '#3d6ee0'
-const bdr   = '#2a2a36'
-const bg    = '#0d0d11'
-const bg2   = '#141418'
-const bg3   = '#1e1e26'
-const accbg = '#141f3c'
-const text  = '#eeedf5'
-const red   = '#ff5b5b'
-const sans  = "'Inter', sans-serif"
-const serif = "'Sora', sans-serif"
+import { t2, t3, acc, acc2, bdr, bg, bg2, bg3, accbg, text, red, sans, serif } from '../theme'
 
 const TABS = [
   {
