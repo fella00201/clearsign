@@ -386,10 +386,10 @@ export default function Chat() {
           onInput={handleInput}
           onChange={e => setInput(e.target.value)}
           onFocus={e => e.target.style.borderColor = acc}
-          onBlur={e => e.target.style.borderColor = bdr}
+          onBlur={e => e.target.style.borderColor = t2}
           style={{
-            flex: 1, background: bg3, border: `1px solid ${bdr}`, borderRadius: 14,
-            padding: '10px 13px', fontSize: 14, fontFamily: sans, color: text,
+            flex: 1, background: '#4A4238', border: `1px solid ${t2}`, borderRadius: 14,
+            padding: '10px 13px', fontSize: 14, fontFamily: sans, color: bg2,
             outline: 'none', resize: 'none', maxHeight: 100,
             transition: 'border-color 0.18s',
           }}
