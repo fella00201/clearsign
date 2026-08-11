@@ -24,6 +24,8 @@ const INPUT_BDR = '#D6D5CF'
 const INPUT_LINE_H = 20
 const INPUT_MIN_H = 40                        // padding(20) + 1 line
 const INPUT_MAX_H = 20 + INPUT_LINE_H * 3      // padding(20) + 3 lines — scroll only past this
+const INPUT_THUMB_RIGHT = 9                    // gap between thumb and the textarea's right edge
+const INPUT_TRACK_INSET = 5                    // gap the thumb's track leaves at top and bottom
 
 // The native scrollbar (and its up/down arrow buttons) can't be reliably
 // suppressed with CSS alone across browsers, so it's hidden completely —
@@ -98,9 +100,10 @@ export default function Chat() {
       setThumb(t => (t.show ? { show: false, top: 0, height: 0 } : t))
       return
     }
-    const thumbH = Math.max(16, (clientHeight / scrollHeight) * clientHeight)
-    const maxTop = clientHeight - thumbH
-    const thumbTop = ((scrollTop / (scrollHeight - clientHeight)) || 0) * maxTop
+    const trackH = clientHeight - INPUT_TRACK_INSET * 2
+    const thumbH = Math.max(16, (clientHeight / scrollHeight) * trackH)
+    const maxTop = trackH - thumbH
+    const thumbTop = INPUT_TRACK_INSET + (((scrollTop / (scrollHeight - clientHeight)) || 0) * maxTop)
     setThumb({ show: true, top: thumbTop, height: thumbH })
   }
 
@@ -110,7 +113,7 @@ export default function Chat() {
     if (!el) return
     const startY = e.clientY
     const startScrollTop = el.scrollTop
-    const trackH = el.clientHeight
+    const trackH = el.clientHeight - INPUT_TRACK_INSET * 2
     const scrollable = el.scrollHeight - el.clientHeight
     const thumbH = Math.max(16, (el.clientHeight / el.scrollHeight) * trackH)
     const travel = trackH - thumbH
@@ -471,7 +474,7 @@ export default function Chat() {
             <div
               onPointerDown={onThumbPointerDown}
               style={{
-                position: 'absolute', top: thumb.top, right: 6, width: 5, height: thumb.height,
+                position: 'absolute', top: thumb.top, right: INPUT_THUMB_RIGHT, width: 5, height: thumb.height,
                 borderRadius: 999, background: INPUT_BDR, cursor: 'grab', touchAction: 'none',
               }}
             />
