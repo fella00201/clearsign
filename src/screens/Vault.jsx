@@ -2,20 +2,7 @@ import { useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useContracts } from '../store/useContracts'
 import { useAuth } from '../store/useAuth'
-
-const bg    = '#0d0d11'
-const bg2   = '#141418'
-const bg3   = '#1e1e26'
-const bdr   = '#2a2a36'
-const text  = '#eeedf5'
-const t2    = '#9896b2'
-const t3    = '#56546c'
-const acc   = '#5b8fff'
-const green = '#3ecf7a'
-const greenbg  = '#0c2018'
-const greenbdr = '#183a28'
-const sans  = "'Inter', sans-serif"
-const serif = "'Sora', sans-serif"
+import { bg, bg2, bg3, bdr, text, t2, t3, acc, green, sans, serif } from '../theme'
 
 function initials(n) {
   return (n || '?').split(' ').map(w => w[0] || '').slice(0, 2).join('').toUpperCase() || '?'
@@ -114,9 +101,9 @@ export default function Vault() {
                     display: 'inline-flex', alignItems: 'center', gap: 4, flexShrink: 0,
                     fontSize: 10, fontWeight: 700, letterSpacing: '0.4px', textTransform: 'uppercase',
                     padding: '3px 8px', borderRadius: 999,
-                    background: sealed ? greenbg : '#1a2d4a',
+                    background: sealed ? `${green}22` : `${acc}22`,
                     color: sealed ? green : acc,
-                    border: `1px solid ${sealed ? greenbdr : '#1e3560'}`,
+                    border: `1px solid ${sealed ? green : acc}55`,
                   }}>
                     <span style={{ width: 5, height: 5, borderRadius: '50%', background: 'currentColor', flexShrink: 0 }} />
                     {sealed ? 'Sealed' : 'Pending'}

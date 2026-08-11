@@ -2,20 +2,9 @@ import { useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useContracts } from '../store/useContracts'
 import { useAuth } from '../store/useAuth'
+import { bg, bg2, bdr, text, t2, acc, green, amber, sans, serif, CAT_COLORS } from '../theme'
 
-const bg       = '#0d0d11'
-const bg2      = '#141418'
-const bdr      = '#2a2a36'
-const text     = '#eeedf5'
-const t2       = '#9896b2'
-const acc      = '#5b8fff'
-const green    = '#3ecf7a'
-const greenbg  = '#0c2018'
-const greenbdr = '#183a28'
-const amber    = '#f5a623'
-const pink     = '#ff7eb3'
-const sans     = "'Inter', sans-serif"
-const serif    = "'Sora', sans-serif"
+const pink = CAT_COLORS.service.ink
 
 const CONFETTI = [
   { color: acc,   dx: -52, dy: -70 },
@@ -123,7 +112,7 @@ export default function Sealed() {
           <svg width="90" height="90" viewBox="0 0 90 90" fill="none" style={{ overflow: 'visible', animation: 'cs-pulse 2s ease-in-out 1.5s infinite' }}>
             <circle
               cx="45" cy="45" r="35"
-              fill={greenbg}
+              fill={`${green}22`}
               stroke={green} strokeWidth="3"
               strokeDasharray="220" strokeDashoffset="220"
               transform="rotate(-90 45 45)"
@@ -171,7 +160,7 @@ export default function Sealed() {
                 display: 'inline-flex', alignItems: 'center', gap: 4,
                 fontSize: 10, fontWeight: 700, letterSpacing: '0.4px', textTransform: 'uppercase',
                 padding: '3px 8px', borderRadius: 999,
-                background: greenbg, color: green, border: `1px solid ${greenbdr}`,
+                background: `${green}22`, color: green, border: `1px solid ${green}55`,
               }}>
                 ✓ Signed
               </div>
@@ -183,7 +172,7 @@ export default function Sealed() {
         <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: 9, animation: 'cs-fade-up 0.5s ease-out 0.7s both' }}>
           <button
             onClick={() => navigate('/review', { state: { contractId: activeDoc.id, listingId: activeDoc.listingId, targetName: otherName } })}
-            style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7, padding: 14, borderRadius: 14, border: 'none', background: green, color: '#071a0f', fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: sans, width: '100%', minHeight: 44 }}
+            style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7, padding: 14, borderRadius: 14, border: 'none', background: green, color: bg2, fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: sans, width: '100%', minHeight: 44 }}
           >
             ⭐ Leave a review →
           </button>

@@ -2,18 +2,7 @@ import { useRef, useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useContracts } from '../store/useContracts'
 import { useAuth } from '../store/useAuth'
-
-const bg    = '#0d0d11'
-const bg2   = '#141418'
-const bg3   = '#1e1e26'
-const bdr   = '#2a2a36'
-const text  = '#eeedf5'
-const t2    = '#9896b2'
-const t3    = '#56546c'
-const acc   = '#5b8fff'
-const green = '#3ecf7a'
-const sans  = "'Inter', sans-serif"
-const serif = "'Sora', sans-serif"
+import { bg, bg2, bg3, bdr, text, t2, t3, acc, green, sans, serif } from '../theme'
 
 export default function Signing() {
   const navigate      = useNavigate()
@@ -182,7 +171,7 @@ export default function Signing() {
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             width: '100%', padding: 14, borderRadius: 14, border: 'none',
             background: hasMark ? green : bg3,
-            color: hasMark ? '#071a0f' : t3,
+            color: hasMark ? bg2 : t3,
             fontSize: 14, fontWeight: 600,
             cursor: hasMark ? 'pointer' : 'default',
             fontFamily: sans, transition: 'all 0.18s',
