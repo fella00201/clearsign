@@ -90,7 +90,11 @@ export default function Chat() {
     const el = textareaRef.current
     if (!el) return
     const { scrollHeight, clientHeight, scrollTop } = el
-    if (scrollHeight <= clientHeight + 1) {
+    // clientHeight excludes the textarea's own border (box-sizing:border-box)
+    // but scrollHeight doesn't, so without this the border width alone
+    // (~2px) reads as "overflow" and shows the thumb on the very first line.
+    const borderY = el.offsetHeight - el.clientHeight
+    if (scrollHeight <= clientHeight + borderY) {
       setThumb(t => (t.show ? { show: false, top: 0, height: 0 } : t))
       return
     }
@@ -442,7 +446,7 @@ export default function Chat() {
         paddingBottom: 'max(12px, env(safe-area-inset-bottom))',
         borderTop: `1px solid ${bdr}`, background: bg, flexShrink: 0,
       }}>
-        <div style={{ position: 'relative', flex: 1 }}>
+        <div style={{ position: 'relative', flex: 1, borderRadius: 14, overflow: 'hidden' }}>
           <textarea
             ref={textareaRef}
             className="cs-chat-input"
@@ -467,7 +471,7 @@ export default function Chat() {
             <div
               onPointerDown={onThumbPointerDown}
               style={{
-                position: 'absolute', top: thumb.top, right: 4, width: 5, height: thumb.height,
+                position: 'absolute', top: thumb.top, right: 6, width: 5, height: thumb.height,
                 borderRadius: 999, background: INPUT_BDR, cursor: 'grab', touchAction: 'none',
               }}
             />
