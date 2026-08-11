@@ -81,12 +81,14 @@ holds the per-category identity colors used for badges, tag pills, and
 category chips — see `src/data/categories.js` for how `TAGS` consumes them.
 
 ### Migration status
-`src/theme.js`, `src/data/categories.js`, `src/index.css`, `index.html`,
-`src/screens/Discover.jsx`, and `src/components/NavBar.jsx` are on the Ledger
-palette. Every other screen still has its own hardcoded dark-palette consts
-at the top of the file — when touching any of them, replace that local const
-block with an import from `../theme` instead of leaving the old dark hex
-values in place.
+Migration to the Ledger palette is complete — every screen and component
+imports its tokens from `src/theme.js`. There should be no local hardcoded
+color consts left; if you find one, replace it with an import from `../theme`
+rather than leaving the old dark hex values in place. Status/tint colors
+that don't have a direct token (e.g. a "signed" or "pending" badge) are
+built from the nearest existing token with an alpha suffix (e.g. `` `${green}22` ``
+for background, `` `${green}55` `` for border) rather than inventing new hex
+values — see Contract.jsx or Vault.jsx for the pattern.
 
 ## State management pattern
 ```js
