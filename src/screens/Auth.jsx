@@ -1,5 +1,5 @@
-import { useRef, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useState } from 'react'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../store/useAuth'
 import { useIsDesktop } from '../components/NavBar'
 import { bg, bg2, bg3, bdr, text, t2, t3, acc, acc2, accbg, red, sans, serif } from '../theme'
@@ -15,19 +15,13 @@ const FEATURES = [
   ['🤖', 'AI assistant to guide you'],
 ]
 
-// Two-step hero: a handshake plays once, then hands off to a wax-seal
-// stamp — "they shook on it, then it was sealed." One-way, not a loop.
+// Ambient, seamlessly-looping wax-seal medallion — plays forever, no
+// beginning/end narrative (that lives on the Landing page's step-by-step
+// walkthrough instead).
 function Hero({ desktop }) {
   const [reducedMotion] = useState(() =>
     typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches
   )
-  const [stage, setStage] = useState('handshake')
-  const waxsealRef = useRef(null)
-
-  function onHandshakeEnd() {
-    setStage('waxseal')
-    waxsealRef.current?.play().catch(() => {})
-  }
 
   const frame = {
     position: 'relative', overflow: 'hidden',
@@ -57,26 +51,12 @@ function Hero({ desktop }) {
   return (
     <div style={frame}>
       <video
-        autoPlay muted playsInline preload="auto"
-        onEnded={onHandshakeEnd}
+        autoPlay muted loop playsInline preload="auto"
         style={{
           position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover',
-          opacity: stage === 'handshake' ? 1 : 0,
-          transition: 'opacity 0.6s ease',
         }}
       >
-        <source src="/video/auth-handshake.mp4" type="video/mp4" />
-      </video>
-      <video
-        ref={waxsealRef}
-        muted playsInline preload="auto"
-        style={{
-          position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover',
-          opacity: stage === 'waxseal' ? 1 : 0,
-          transition: 'opacity 0.6s ease',
-        }}
-      >
-        <source src="/video/auth-waxseal.mp4" type="video/mp4" />
+        <source src="/video/auth-loop.mp4" type="video/mp4" />
       </video>
       {/* Vignette so the clip blends into the paper background instead of a hard edge */}
       <div style={{
@@ -111,7 +91,8 @@ function HeroCaption({ desktop }) {
 }
 
 export default function Auth() {
-  const [mode, setMode] = useState('signup')
+  const [searchParams] = useSearchParams()
+  const [mode, setMode] = useState(searchParams.get('mode') === 'signin' ? 'signin' : 'signup')
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [error, setError] = useState('')

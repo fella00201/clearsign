@@ -3,6 +3,7 @@ import { Routes, Route, Navigate } from 'react-router-dom'
 import { useAuth } from './store/useAuth'
 import { useIsDesktop } from './components/NavBar'
 import NavBar from './components/NavBar'
+import Landing from './screens/Landing'
 import Auth from './screens/Auth'
 import Discover from './screens/Discover'
 import Listing from './screens/Listing'
@@ -17,15 +18,9 @@ import Notifications from './screens/Notifications'
 import Profile from './screens/Profile'
 import Review from './screens/Review'
 import AlertSetup from './screens/AlertSetup'
-
-const bg   = '#0d0d11'
-const sans = "'Inter', sans-serif"
+import { bg } from './theme'
 
 const GLOBAL_CSS = `
-@keyframes cs-pulse-glow {
-  0%,100% { box-shadow: 0 4px 20px rgba(91,143,255,.4); }
-  50%      { box-shadow: 0 4px 32px rgba(91,143,255,.7); }
-}
 @keyframes cs-bounce {
   0%,100% { transform: translateY(0); }
   50%      { transform: translateY(-4px); }
@@ -77,7 +72,7 @@ export default function App() {
       <GlobalStyles />
       <Routes>
         <Route path="/auth"           element={user ? <Navigate to="/" replace /> : <Auth />} />
-        <Route path="/"               element={<RequireAuth><Discover /></RequireAuth>} />
+        <Route path="/"               element={user ? <RequireAuth><Discover /></RequireAuth> : <Landing />} />
         <Route path="/listing/:id"    element={<RequireAuth><Listing /></RequireAuth>} />
         <Route path="/post"           element={<RequireAuth><PostListing /></RequireAuth>} />
         <Route path="/messages"       element={<RequireAuth><Messages /></RequireAuth>} />
