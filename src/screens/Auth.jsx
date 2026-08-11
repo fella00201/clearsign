@@ -1,19 +1,10 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../store/useAuth'
+import { bg, bg2, bg3, bdr, text, t2, t3, acc, red, sans, serif } from '../theme'
 
-const bg   = '#0d0d11'
-const bg2  = '#141418'
-const bg3  = '#1e1e26'
-const bdr  = '#2a2a36'
-const text = '#eeedf5'
-const t2   = '#9896b2'
-const t3   = '#56546c'
-const acc  = '#5b8fff'
-const r    = '14px'
-const rs   = '8px'
-const sans = "'Inter', sans-serif"
-const serif = "'Sora', sans-serif"
+const r  = '14px'
+const rs = '8px'
 
 const FEATURES = [
   ['🏠', 'Discover rentals & services'],
@@ -108,7 +99,7 @@ export default function Auth() {
           </Field>
 
           {error && (
-            <p style={{ fontSize: 13, color: '#ff5b5b', marginBottom: 10, marginTop: -4 }}>{error}</p>
+            <p style={{ fontSize: 13, color: red, marginBottom: 10, marginTop: -4 }}>{error}</p>
           )}
 
           <button type="submit" disabled={loading} style={{ ...btnBase, background: acc, color: '#fff', marginBottom: 10, opacity: loading ? 0.4 : 1, cursor: loading ? 'not-allowed' : 'pointer' }}>

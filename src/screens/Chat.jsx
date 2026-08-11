@@ -13,18 +13,7 @@ import {
   updateThreadLastAt,
 } from '../lib/supabase'
 
-// ── Design tokens ──────────────────────────────────────────────────────────
-const bg   = '#0d0d11'
-const bg3  = '#1e1e26'
-const bdr  = '#2a2a36'
-const text = '#eeedf5'
-const t2   = '#9896b2'
-const t3   = '#56546c'
-const acc  = '#5b8fff'
-const acc2 = '#3d6ee0'
-const green = '#3ecf7a'
-const sans = "'Inter', sans-serif"
-const serif = "'Sora', sans-serif"
+import { bg, bg3, bdr, text, t2, t3, acc, acc2, green, bg2, sans } from '../theme'
 
 const UUID_RE = /^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/i
 
@@ -369,8 +358,9 @@ export default function Chat() {
             onClick={createContract}
             style={{
               width: '100%', padding: '13px 16px', borderRadius: 14,
-              border: 'none', background: generating ? '#236644' : green,
-              color: '#0d0d11', fontSize: 14, fontWeight: 700,
+              border: 'none', background: green,
+              color: bg2, fontSize: 14, fontWeight: 700,
+              opacity: generating ? 0.6 : 1,
               cursor: generating ? 'default' : 'pointer',
               fontFamily: sans, transition: 'all 0.18s',
             }}

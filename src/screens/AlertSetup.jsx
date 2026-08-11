@@ -2,19 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../store/useAuth'
 import { CATS } from '../data/categories'
-
-const bg    = '#0d0d11'
-const bg2   = '#141418'
-const bg3   = '#1e1e26'
-const bdr   = '#2a2a36'
-const text  = '#eeedf5'
-const t2    = '#9896b2'
-const t3    = '#56546c'
-const acc   = '#5b8fff'
-const red   = '#ff5b5b'
-const redbg = '#220d0d'
-const sans  = "'Inter', sans-serif"
-const serif = "'Sora', sans-serif"
+import { bg, bg2, bg3, bdr, text, t2, t3, acc, red, redbg, sans, serif } from '../theme'
 
 function useToast() {
   const [toast, setToast] = useState(null)
@@ -95,7 +83,7 @@ export default function AlertSetup() {
                 <button
                   onClick={() => remove(i)}
                   style={{
-                    background: redbg, border: `1px solid #3a0d0d`,
+                    background: redbg, border: `1px solid ${red}`,
                     borderRadius: 6, color: red, fontSize: 11, fontWeight: 700,
                     padding: '4px 9px', cursor: 'pointer', fontFamily: sans,
                   }}
@@ -170,7 +158,7 @@ export default function AlertSetup() {
       {toast && (
         <div style={{
           position: 'fixed', bottom: 24, left: '50%', transform: 'translateX(-50%)',
-          background: '#27272f', color: text, border: `1px solid ${bdr}`,
+          background: text, color: bg2, border: `1px solid ${text}`,
           fontSize: 13, fontWeight: 500, padding: '9px 18px', borderRadius: 999,
           zIndex: 200, whiteSpace: 'nowrap', fontFamily: sans, pointerEvents: 'none',
         }}>

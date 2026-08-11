@@ -3,21 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { useContracts } from '../store/useContracts'
 import { useAuth } from '../store/useAuth'
 
-// ── Design tokens ──────────────────────────────────────────────────────────
-const bg    = '#0d0d11'
-const bg2   = '#141418'
-const bg3   = '#1e1e26'
-const bdr   = '#2a2a36'
-const text  = '#eeedf5'
-const t2    = '#9896b2'
-const t3    = '#56546c'
-const acc   = '#5b8fff'
-const green = '#3ecf7a'
-const greenbg  = '#0c2018'
-const greenbdr = '#183a28'
-const amber = '#f5a623'
-const sans  = "'Inter', sans-serif"
-const serif = "'Sora', sans-serif"
+import { bg, bg2, bg3, bdr, text, t2, t3, acc, green, amber, sans, serif } from '../theme'
 
 function initials(n) {
   return n.split(' ').map(w => w[0] || '').slice(0, 2).join('').toUpperCase() || '?'
@@ -99,9 +85,9 @@ export default function Contract() {
           display: 'inline-flex', alignItems: 'center', gap: 4,
           fontSize: 10, fontWeight: 700, letterSpacing: '0.4px', textTransform: 'uppercase',
           padding: '3px 8px', borderRadius: 999,
-          background: sealed ? greenbg : '#1a2d4a',
+          background: sealed ? `${green}22` : `${acc}22`,
           color: sealed ? green : acc,
-          border: `1px solid ${sealed ? greenbdr : '#1e3560'}`,
+          border: `1px solid ${sealed ? green : acc}55`,
         }}>
           <span style={{ width: 5, height: 5, borderRadius: '50%', background: 'currentColor', flexShrink: 0 }} />
           {sealed ? 'Sealed' : 'Pending'}
@@ -146,9 +132,9 @@ export default function Contract() {
                 display: 'inline-flex', alignItems: 'center', gap: 4,
                 fontSize: 10, fontWeight: 700, letterSpacing: '0.4px', textTransform: 'uppercase',
                 padding: '3px 8px', borderRadius: 999,
-                background: p.signed ? greenbg : '#1a2d4a',
+                background: p.signed ? `${green}22` : `${acc}22`,
                 color: p.signed ? green : acc,
-                border: `1px solid ${p.signed ? greenbdr : '#1e3560'}`,
+                border: `1px solid ${p.signed ? green : acc}55`,
               }}>
                 <span style={{ width: 5, height: 5, borderRadius: '50%', background: 'currentColor', flexShrink: 0 }} />
                 {p.signed ? 'Signed' : 'Unsigned'}
@@ -158,7 +144,7 @@ export default function Contract() {
         </div>
 
         {/* Amber disclaimer */}
-        <div style={{ background: '#231a04', border: '1px solid #3a2a08', borderRadius: 8, padding: '10px 12px', marginBottom: 12, fontSize: 12, color: amber, lineHeight: 1.5 }}>
+        <div style={{ background: `${amber}22`, border: `1px solid ${amber}55`, borderRadius: 8, padding: '10px 12px', marginBottom: 12, fontSize: 12, color: amber, lineHeight: 1.5 }}>
           AI-generated. For complex situations, consult an attorney.
         </div>
 
@@ -173,7 +159,7 @@ export default function Contract() {
         <div style={{ padding: '14px 16px', paddingBottom: 'max(14px, env(safe-area-inset-bottom))', background: bg, borderTop: `1px solid ${bdr}`, flexShrink: 0 }}>
           <button
             onClick={() => navigate('/signing')}
-            style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%', padding: 14, borderRadius: 14, border: 'none', background: green, color: '#071a0f', fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: sans, transition: 'all 0.18s' }}
+            style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%', padding: 14, borderRadius: 14, border: 'none', background: green, color: bg2, fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: sans, transition: 'all 0.18s' }}
           >
             Sign this contract →
           </button>

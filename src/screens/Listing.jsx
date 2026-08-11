@@ -6,25 +6,13 @@ import { useContracts } from '../store/useContracts'
 import { generateContract } from '../lib/contracts'
 import { findThread, insertThread } from '../lib/supabase'
 import { CATS, TAGS } from '../data/categories'
-
-// ── Design tokens ──────────────────────────────────────────────────────────
-const bg    = '#0d0d11'
-const bg2   = '#141418'
-const bg3   = '#1e1e26'
-const bdr   = '#2a2a36'
-const text  = '#eeedf5'
-const t2    = '#9896b2'
-const t3    = '#56546c'
-const acc   = '#5b8fff'
-const amber = '#f5a623'
-const sans  = "'Inter', sans-serif"
-const serif = "'Sora', sans-serif"
+import { bg, bg2, bg3, bg4, bdr, text, t2, t3, acc, amber, sans, serif, CAT_COLORS } from '../theme'
 
 const BADGE = {
-  'b-rental':  { bg: '#1a2d4a', color: '#7eb8ff', border: '#1e3560' },
-  'b-service': { bg: '#220d18', color: '#ff7eb3', border: '#3a1528' },
-  'b-sale':    { bg: '#231a04', color: '#f5a623', border: '#3a2a08' },
-  'b-seek':    { bg: '#0c2018', color: '#3ecf7a', border: '#183a28' },
+  'b-rental':  { bg: CAT_COLORS.rental.tint,  color: CAT_COLORS.rental.ink,  border: CAT_COLORS.rental.border },
+  'b-service': { bg: CAT_COLORS.service.tint, color: CAT_COLORS.service.ink, border: CAT_COLORS.service.border },
+  'b-sale':    { bg: CAT_COLORS.sale.tint,    color: CAT_COLORS.sale.ink,    border: CAT_COLORS.sale.border },
+  'b-seek':    { bg: CAT_COLORS.seek.tint,    color: CAT_COLORS.seek.ink,    border: CAT_COLORS.seek.border },
 }
 
 function initials(name) {
@@ -48,7 +36,7 @@ function Stars({ rating, size = 14 }) {
   return (
     <div style={{ display: 'flex', gap: 2 }}>
       {[1, 2, 3, 4, 5].map(i => (
-        <span key={i} style={{ fontSize: size, color: rating >= i ? amber : '#27272f' }}>★</span>
+        <span key={i} style={{ fontSize: size, color: rating >= i ? amber : bg4 }}>★</span>
       ))}
     </div>
   )
@@ -96,7 +84,7 @@ export default function Listing() {
 
   const cfg    = CATS[listing.cat]
   const bs     = BADGE[cfg.badge]
-  const tagCfg = TAGS[listing.subcat] || { color: '#1e2630', text: '#7eb8ff' }
+  const tagCfg = TAGS[listing.subcat] || { color: bg4, text: t2 }
   const isOwn  = user && listing.ownerEmail === user.email
   const price  = listing.price_per_month || listing.price_per_day || listing.hourly_rate ||
     listing.asking_price || listing.loan_amount || listing.total_fee ||
@@ -406,7 +394,7 @@ export default function Listing() {
                 setGenerating(false)
               }
             }}
-            style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7, padding: 14, borderRadius: 14, border: 'none', background: generating ? '#3a4a6a' : acc, color: '#fff', fontSize: 14, fontWeight: 600, cursor: generating ? 'default' : 'pointer', fontFamily: sans, transition: 'all 0.18s' }}
+            style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7, padding: 14, borderRadius: 14, border: 'none', background: acc, color: '#fff', opacity: generating ? 0.6 : 1, fontSize: 14, fontWeight: 600, cursor: generating ? 'default' : 'pointer', fontFamily: sans, transition: 'all 0.18s' }}
           >
             {generating ? 'Generating…' : 'I can help →'}
           </button>
