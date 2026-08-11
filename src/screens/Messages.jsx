@@ -2,17 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../store/useAuth'
 import { fetchThreads } from '../lib/supabase'
-
-// ── Design tokens ──────────────────────────────────────────────────────────
-const bg   = '#0d0d11'
-const bg3  = '#1e1e26'
-const bdr  = '#2a2a36'
-const text = '#eeedf5'
-const t2   = '#9896b2'
-const t3   = '#56546c'
-const acc  = '#5b8fff'
-const sans = "'Inter', sans-serif"
-const serif = "'Sora', sans-serif"
+import { bg, bg3, bdr, text, t2, t3, acc, sans, serif } from '../theme'
 
 function initials(name) {
   return name.split(' ').map(w => w[0] || '').slice(0, 2).join('').toUpperCase() || '?'

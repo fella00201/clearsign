@@ -4,19 +4,7 @@ import { useListings } from '../store/useListings'
 import { useAuth } from '../store/useAuth'
 import { CATS, TAGS } from '../data/categories'
 import { supabase } from '../lib/supabase'
-
-// ── Design tokens ──────────────────────────────────────────────────────────
-const bg    = '#0d0d11'
-const bg2   = '#141418'
-const bg3   = '#1e1e26'
-const bdr   = '#2a2a36'
-const text  = '#eeedf5'
-const t2    = '#9896b2'
-const t3    = '#56546c'
-const acc   = '#5b8fff'
-const accbg = '#141f3c'
-const sans  = "'Inter', sans-serif"
-const serif = "'Sora', sans-serif"
+import { bg, bg2, bg3, bdr, bdr2, text, t2, t3, acc, accbg, red, sans, serif } from '../theme'
 
 // ── Listing field config ────────────────────────────────────────────────────
 const LISTING_FIELDS = {
@@ -157,7 +145,7 @@ const baseInput = {
   borderRadius: 8, padding: '11px 13px', fontSize: 14,
   fontFamily: sans, color: text, outline: 'none',
   transition: 'border-color 0.18s', resize: 'none',
-  WebkitAppearance: 'none', boxSizing: 'border-box', colorScheme: 'dark',
+  WebkitAppearance: 'none', boxSizing: 'border-box', colorScheme: 'light',
 }
 
 const labelStyle = {
@@ -169,7 +157,7 @@ const selectStyle = {
   background: bg3, border: `1px solid ${bdr}`, borderRadius: 8,
   padding: '11px 10px', fontSize: 13, fontFamily: sans, color: text,
   outline: 'none', cursor: 'pointer', appearance: 'none', WebkitAppearance: 'none',
-  colorScheme: 'dark',
+  colorScheme: 'light',
 }
 
 function PriceField({ answers, setAnswer, subtype }) {
@@ -422,7 +410,7 @@ export default function PostListing() {
               key={k}
               onClick={() => pickCat(k)}
               style={{ background: bg2, border: `1px solid ${bdr}`, borderRadius: 14, padding: '16px 14px', cursor: 'pointer', transition: 'all 0.18s' }}
-              onMouseEnter={e => { e.currentTarget.style.borderColor = '#3a3a4c'; e.currentTarget.style.background = bg3 }}
+              onMouseEnter={e => { e.currentTarget.style.borderColor = bdr2; e.currentTarget.style.background = bg3 }}
               onMouseLeave={e => { e.currentTarget.style.borderColor = bdr; e.currentTarget.style.background = bg2 }}
             >
               <div style={{ fontSize: 26, marginBottom: 8 }}>{c.icon}</div>
@@ -548,7 +536,7 @@ export default function PostListing() {
         )}
 
         {error && (
-          <p style={{ fontSize: 13, color: '#ff5b5b', marginBottom: 10 }}>{error}</p>
+          <p style={{ fontSize: 13, color: red, marginBottom: 10 }}>{error}</p>
         )}
       </div>
     </>

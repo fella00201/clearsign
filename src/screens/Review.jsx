@@ -2,21 +2,7 @@ import { useState } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../store/useAuth'
 import { useListings } from '../store/useListings'
-
-const bg    = '#0d0d11'
-const bg2   = '#141418'
-const bg3   = '#1e1e26'
-const bdr   = '#2a2a36'
-const text  = '#eeedf5'
-const t2    = '#9896b2'
-const t3    = '#56546c'
-const acc   = '#5b8fff'
-const amber = '#f5a623'
-const green = '#3ecf7a'
-const greenbg  = '#0c2018'
-const greenbdr = '#183a28'
-const sans  = "'Inter', sans-serif"
-const serif = "'Sora', sans-serif"
+import { bg, bg3, bdr, text, t2, t3, acc, amber, green, sans, serif } from '../theme'
 
 const LABELS = ['', 'Poor', 'Fair', 'Good', 'Great', 'Excellent!']
 
@@ -148,7 +134,7 @@ export default function Review() {
         </div>
 
         {/* Verified badge */}
-        <div style={{ background: greenbg, border: `1px solid ${greenbdr}`, borderRadius: 8, padding: '11px 13px', fontSize: 12, color: green, lineHeight: 1.5, marginBottom: 8 }}>
+        <div style={{ background: `${green}22`, border: `1px solid ${green}55`, borderRadius: 8, padding: '11px 13px', fontSize: 12, color: green, lineHeight: 1.5, marginBottom: 8 }}>
           ✓ Verified — only possible after both parties signed on ClearSign.
         </div>
       </div>

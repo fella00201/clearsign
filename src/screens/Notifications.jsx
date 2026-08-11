@@ -3,19 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useContracts } from '../store/useContracts'
 import { useAuth } from '../store/useAuth'
 
-const bg    = '#0d0d11'
-const bg2   = '#141418'
-const bg3   = '#1e1e26'
-const bdr   = '#2a2a36'
-const greenbdr = '#183a28'
-const text  = '#eeedf5'
-const t2    = '#9896b2'
-const t3    = '#56546c'
-const acc   = '#5b8fff'
-const green = '#3ecf7a'
-const greenbg = '#0c2018'
-const sans  = "'Inter', sans-serif"
-const serif = "'Sora', sans-serif"
+import { bg, bg2, bg3, bdr, text, t2, t3, acc, green, sans, serif } from '../theme'
 
 function fmtDate(iso) {
   if (!iso) return ''
@@ -134,7 +122,7 @@ export default function Notifications() {
                 <div
                   key={c.id}
                   onClick={() => openContract(c)}
-                  style={{ background: bg2, border: `1px solid ${greenbdr}`, borderRadius: 14, padding: 14, marginBottom: 10, cursor: 'pointer' }}
+                  style={{ background: bg2, border: `1px solid ${green}55`, borderRadius: 14, padding: 14, marginBottom: 10, cursor: 'pointer' }}
                 >
                   <div style={{ fontSize: 13, fontWeight: 600, color: text, marginBottom: 4 }}>
                     Contract awaiting your signature
@@ -146,7 +134,7 @@ export default function Notifications() {
                     style={{
                       display: 'inline-flex', alignItems: 'center', gap: 5,
                       padding: '8px 14px', borderRadius: 8, border: 'none',
-                      background: green, color: '#071a0f', fontSize: 12, fontWeight: 700,
+                      background: green, color: bg2, fontSize: 12, fontWeight: 700,
                       cursor: 'pointer', fontFamily: sans,
                     }}
                   >
@@ -176,7 +164,7 @@ export default function Notifications() {
                     cursor: 'pointer', display: 'flex', gap: 10, alignItems: 'flex-start',
                   }}
                 >
-                  <div style={{ width: 34, height: 34, borderRadius: '50%', background: '#141f3c', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  <div style={{ width: 34, height: 34, borderRadius: '50%', background: `${acc}22`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                     {notifIcon(n.type)}
                   </div>
                   <div style={{ flex: 1, minWidth: 0 }}>
