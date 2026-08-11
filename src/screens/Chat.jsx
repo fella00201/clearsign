@@ -170,10 +170,21 @@ export default function Chat() {
     return () => { cancelled = true }
   }, [threadId, user?.email])
 
-  // Fetch the listing so we can determine if current user is the owner
+  // Fetch the listing so we can determine if current user is the owner.
+  // Falls back to the owner's own local listings cache — matters when a
+  // listing's Supabase insert never landed (network hiccup at post time),
+  // in which case thread.listingId is a local-only id Supabase has never
+  // heard of, and without this the owner would never see the contract
+  // button for that thread.
   useEffect(() => {
     if (!thread?.listingId) return
-    fetchListingById(thread.listingId).then(setListing).catch(() => {})
+    fetchListingById(thread.listingId).then(setListing).catch(() => {
+      try {
+        const local = JSON.parse(localStorage.getItem('cs_listings_user') || '[]')
+        const found = local.find(l => l.id === thread.listingId)
+        if (found) setListing(found)
+      } catch {}
+    })
   }, [thread?.listingId])
 
   // Auto-scroll to bottom whenever messages change
