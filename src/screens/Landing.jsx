@@ -59,6 +59,10 @@ const MOCKUP_CSS = `
 }
 `
 
+// Symmetric reveal: toggles both ways at the same ~30% threshold, so a step
+// resets as soon as it scrolls out of view (either direction) and replays
+// in full — including its staggered entrance timing — next time it's
+// scrolled back into view.
 function useReveal() {
   const ref = useRef(null)
   const [inView, setInView] = useState(false)
@@ -66,7 +70,7 @@ function useReveal() {
     const el = ref.current
     if (!el) return
     const obs = new IntersectionObserver(([entry]) => {
-      if (entry.isIntersecting) { setInView(true); obs.disconnect() }
+      setInView(entry.isIntersecting)
     }, { threshold: 0.3 })
     obs.observe(el)
     return () => obs.disconnect()
@@ -120,7 +124,9 @@ function DiscoverMockup({ inView }) {
               display: 'flex', alignItems: 'center', gap: 10, padding: '9px 11px',
               background: i === 0 ? M.blueSoft : M.panel, borderRadius: 12,
               opacity: inView ? 1 : 0, transform: inView ? 'translateY(0)' : 'translateY(10px)',
-              transition: `opacity 0.5s ease ${delay}s, transform 0.5s ease ${delay}s`,
+              transition: inView
+                ? `opacity 0.5s ease ${delay}s, transform 0.5s ease ${delay}s`
+                : 'opacity 0.2s ease, transform 0.2s ease',
             }}>
               <div style={{ width: 30, height: 30, borderRadius: 8, background: M.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, flexShrink: 0 }}>{l.icon}</div>
               <div style={{ textAlign: 'left', minWidth: 0 }}>
@@ -160,7 +166,9 @@ function MessageMockup({ inView }) {
           fontSize: 13, fontFamily: sans, lineHeight: 1.4, textAlign: 'left',
           opacity: inView ? 1 : 0,
           transform: inView ? 'translateY(0) scale(1)' : 'translateY(8px) scale(0.97)',
-          transition: `opacity 0.4s ease ${b.delay}s, transform 0.4s ease ${b.delay}s`,
+          transition: inView
+            ? `opacity 0.4s ease ${b.delay}s, transform 0.4s ease ${b.delay}s`
+            : 'opacity 0.2s ease, transform 0.2s ease',
         }}>
           {b.text}
         </div>
@@ -168,7 +176,8 @@ function MessageMockup({ inView }) {
       <div style={{
         alignSelf: 'flex-start', marginTop: 2, fontSize: 11, fontWeight: 700, color: M.blueDeep,
         background: M.blueSoft, borderRadius: 999, padding: '4px 10px', fontFamily: sans,
-        opacity: inView ? 1 : 0, transition: 'opacity 0.4s ease 2.6s',
+        opacity: inView ? 1 : 0,
+        transition: inView ? 'opacity 0.4s ease 2.6s' : 'opacity 0.2s ease',
       }}>
         Contract ready →
       </div>
@@ -211,7 +220,7 @@ function SignMockup({ inView }) {
         <path d="M10 58 C 30 20, 55 20, 68 44 S 100 66, 118 30 S 150 8, 168 40 S 200 58, 210 22"
           stroke={M.blue} strokeWidth="3.2" strokeLinecap="round" fill="none"
           strokeDasharray="360" strokeDashoffset={inView ? 0 : 360}
-          style={{ transition: 'stroke-dashoffset 1.6s cubic-bezier(.4,0,.2,1) 0.2s' }}
+          style={{ transition: inView ? 'stroke-dashoffset 1.6s cubic-bezier(.4,0,.2,1) 0.2s' : 'stroke-dashoffset 0.25s ease' }}
         />
         <line x1="4" y1="64" x2="216" y2="64" stroke={M.border} strokeWidth="1.5" strokeDasharray="4 4" />
       </svg>
@@ -234,14 +243,15 @@ function SealedMockup({ inView }) {
           <svg width="34" height="34" viewBox="0 0 34 34" fill="none">
             <path d="M8 18l6 6 12-14" stroke={M.blue} strokeWidth="3.4" strokeLinecap="round" strokeLinejoin="round"
               strokeDasharray="34" strokeDashoffset={inView ? 0 : 34}
-              style={{ transition: 'stroke-dashoffset 0.5s ease 0.6s' }}
+              style={{ transition: inView ? 'stroke-dashoffset 0.5s ease 0.6s' : 'stroke-dashoffset 0.2s ease' }}
             />
           </svg>
         </div>
         <div style={{
           fontSize: 12, fontWeight: 700, color: M.blueDeep, background: M.blueSoft,
           borderRadius: 999, padding: '6px 14px', fontFamily: sans,
-          opacity: inView ? 1 : 0, transition: 'opacity 0.4s ease 0.9s',
+          opacity: inView ? 1 : 0,
+          transition: inView ? 'opacity 0.4s ease 0.9s' : 'opacity 0.2s ease',
         }}>
           Contract sealed ✓
         </div>
