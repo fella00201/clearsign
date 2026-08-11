@@ -25,14 +25,14 @@ const INPUT_LINE_H = 20
 const INPUT_MIN_H = 40                        // padding(20) + 1 line
 const INPUT_MAX_H = 20 + INPUT_LINE_H * 3      // padding(20) + 3 lines — scroll only past this
 
-// Thin, arrow-less scrollbar that only the browser renders once content
-// actually overflows (i.e. once the 4th line is typed).
+// The native scrollbar (and its up/down arrow buttons) can't be reliably
+// suppressed with CSS alone across browsers, so it's hidden completely —
+// the textarea stays scrollable via wheel/touch/keyboard — and a custom
+// thumb (rendered in JS below) stands in for it, shown only once content
+// actually overflows past 3 lines.
 const INPUT_SCROLLBAR_CSS = `
-.cs-chat-input { scrollbar-width: thin; scrollbar-color: ${INPUT_BDR} transparent; }
-.cs-chat-input::-webkit-scrollbar { width: 5px; }
-.cs-chat-input::-webkit-scrollbar-track { background: transparent; }
-.cs-chat-input::-webkit-scrollbar-thumb { background: ${INPUT_BDR}; border-radius: 999px; }
-.cs-chat-input::-webkit-scrollbar-button { display: none; width: 0; height: 0; }
+.cs-chat-input { scrollbar-width: none; -ms-overflow-style: none; }
+.cs-chat-input::-webkit-scrollbar { display: none; width: 0; height: 0; }
 `
 
 function initials(name) {
@@ -77,6 +77,7 @@ export default function Chat() {
 
   const scrollRef   = useRef(null)
   const textareaRef = useRef(null)
+  const [thumb, setThumb] = useState({ show: false, top: 0, height: 0 })
 
   useEffect(() => {
     const style = document.createElement('style')
@@ -84,6 +85,43 @@ export default function Chat() {
     document.head.appendChild(style)
     return () => document.head.removeChild(style)
   }, [])
+
+  function updateThumb() {
+    const el = textareaRef.current
+    if (!el) return
+    const { scrollHeight, clientHeight, scrollTop } = el
+    if (scrollHeight <= clientHeight + 1) {
+      setThumb(t => (t.show ? { show: false, top: 0, height: 0 } : t))
+      return
+    }
+    const thumbH = Math.max(16, (clientHeight / scrollHeight) * clientHeight)
+    const maxTop = clientHeight - thumbH
+    const thumbTop = ((scrollTop / (scrollHeight - clientHeight)) || 0) * maxTop
+    setThumb({ show: true, top: thumbTop, height: thumbH })
+  }
+
+  function onThumbPointerDown(e) {
+    e.preventDefault()
+    const el = textareaRef.current
+    if (!el) return
+    const startY = e.clientY
+    const startScrollTop = el.scrollTop
+    const trackH = el.clientHeight
+    const scrollable = el.scrollHeight - el.clientHeight
+    const thumbH = Math.max(16, (el.clientHeight / el.scrollHeight) * trackH)
+    const travel = trackH - thumbH
+    function onMove(ev) {
+      const ratio = travel > 0 ? (ev.clientY - startY) / travel : 0
+      el.scrollTop = Math.min(scrollable, Math.max(0, startScrollTop + ratio * scrollable))
+      updateThumb()
+    }
+    function onUp() {
+      window.removeEventListener('pointermove', onMove)
+      window.removeEventListener('pointerup', onUp)
+    }
+    window.addEventListener('pointermove', onMove)
+    window.addEventListener('pointerup', onUp)
+  }
 
   // Load thread + messages on mount / threadId change
   useEffect(() => {
@@ -200,6 +238,7 @@ export default function Chat() {
     setMessages(prev => [...prev, msg])
     setInput('')
     if (textareaRef.current) textareaRef.current.style.height = INPUT_MIN_H + 'px'
+    setThumb({ show: false, top: 0, height: 0 })
 
     // Try Supabase if thread ID is a UUID
     if (UUID_RE.test(thread.id)) {
@@ -258,6 +297,7 @@ export default function Chat() {
     const el = e.target
     el.style.height = 'auto'
     el.style.height = Math.min(Math.max(el.scrollHeight, INPUT_MIN_H), INPUT_MAX_H) + 'px'
+    updateThumb()
   }
 
   if (!thread) {
@@ -402,25 +442,37 @@ export default function Chat() {
         paddingBottom: 'max(12px, env(safe-area-inset-bottom))',
         borderTop: `1px solid ${bdr}`, background: bg, flexShrink: 0,
       }}>
-        <textarea
-          ref={textareaRef}
-          className="cs-chat-input"
-          placeholder={`Message ${other.name}…`}
-          value={input}
-          rows={1}
-          onKeyDown={handleKeyDown}
-          onInput={handleInput}
-          onChange={e => setInput(e.target.value)}
-          onFocus={e => e.target.style.borderColor = acc}
-          onBlur={e => e.target.style.borderColor = INPUT_BDR}
-          style={{
-            flex: 1, background: INPUT_BG, border: `1px solid ${INPUT_BDR}`, borderRadius: 14,
-            padding: '10px 13px', fontSize: 14, lineHeight: `${INPUT_LINE_H}px`, fontFamily: sans, color: text,
-            outline: 'none', resize: 'none', boxSizing: 'border-box',
-            height: INPUT_MIN_H, minHeight: INPUT_MIN_H, maxHeight: INPUT_MAX_H, overflowY: 'auto',
-            transition: 'border-color 0.18s',
-          }}
-        />
+        <div style={{ position: 'relative', flex: 1 }}>
+          <textarea
+            ref={textareaRef}
+            className="cs-chat-input"
+            placeholder={`Message ${other.name}…`}
+            value={input}
+            rows={1}
+            onKeyDown={handleKeyDown}
+            onInput={handleInput}
+            onChange={e => setInput(e.target.value)}
+            onScroll={updateThumb}
+            onFocus={e => e.target.style.borderColor = acc}
+            onBlur={e => e.target.style.borderColor = INPUT_BDR}
+            style={{
+              display: 'block', width: '100%', background: INPUT_BG, border: `1px solid ${INPUT_BDR}`, borderRadius: 14,
+              padding: '10px 16px 10px 13px', fontSize: 14, lineHeight: `${INPUT_LINE_H}px`, fontFamily: sans, color: text,
+              outline: 'none', resize: 'none', boxSizing: 'border-box',
+              height: INPUT_MIN_H, minHeight: INPUT_MIN_H, maxHeight: INPUT_MAX_H, overflowY: 'auto',
+              transition: 'border-color 0.18s',
+            }}
+          />
+          {thumb.show && (
+            <div
+              onPointerDown={onThumbPointerDown}
+              style={{
+                position: 'absolute', top: thumb.top, right: 4, width: 5, height: thumb.height,
+                borderRadius: 999, background: INPUT_BDR, cursor: 'grab', touchAction: 'none',
+              }}
+            />
+          )}
+        </div>
         <button
           onClick={sendMessage}
           style={{
