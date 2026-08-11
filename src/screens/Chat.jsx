@@ -17,6 +17,13 @@ import { bg, bg3, bdr, text, t2, t3, acc, acc2, green, bg2, sans } from '../them
 
 const UUID_RE = /^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/i
 
+// Deliberately a neutral, subtle gray rather than the warm Ledger palette —
+// makes the typing area read as an input field at a glance.
+const INPUT_BG  = '#EAEAE6'
+const INPUT_BDR = '#D6D5CF'
+const INPUT_MIN_H = 40
+const INPUT_MAX_H = 100
+
 function initials(name) {
   return name.split(' ').map(w => w[0] || '').slice(0, 2).join('').toUpperCase() || '?'
 }
@@ -174,7 +181,7 @@ export default function Chat() {
     // Optimistic update
     setMessages(prev => [...prev, msg])
     setInput('')
-    if (textareaRef.current) textareaRef.current.style.height = 'auto'
+    if (textareaRef.current) textareaRef.current.style.height = INPUT_MIN_H + 'px'
 
     // Try Supabase if thread ID is a UUID
     if (UUID_RE.test(thread.id)) {
@@ -232,7 +239,7 @@ export default function Chat() {
     setInput(e.target.value)
     const el = e.target
     el.style.height = 'auto'
-    el.style.height = Math.min(el.scrollHeight, 100) + 'px'
+    el.style.height = Math.min(Math.max(el.scrollHeight, INPUT_MIN_H), INPUT_MAX_H) + 'px'
   }
 
   if (!thread) {
@@ -386,11 +393,12 @@ export default function Chat() {
           onInput={handleInput}
           onChange={e => setInput(e.target.value)}
           onFocus={e => e.target.style.borderColor = acc}
-          onBlur={e => e.target.style.borderColor = t2}
+          onBlur={e => e.target.style.borderColor = INPUT_BDR}
           style={{
-            flex: 1, background: '#4A4238', border: `1px solid ${t2}`, borderRadius: 14,
-            padding: '10px 13px', fontSize: 14, fontFamily: sans, color: bg2,
-            outline: 'none', resize: 'none', maxHeight: 100,
+            flex: 1, background: INPUT_BG, border: `1px solid ${INPUT_BDR}`, borderRadius: 14,
+            padding: '10px 13px', fontSize: 14, fontFamily: sans, color: text,
+            outline: 'none', resize: 'none', boxSizing: 'border-box',
+            height: INPUT_MIN_H, minHeight: INPUT_MIN_H, maxHeight: INPUT_MAX_H, overflowY: 'auto',
             transition: 'border-color 0.18s',
           }}
         />
