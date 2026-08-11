@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useNavigate, useSearchParams } from 'react-router-dom'
+import { useNavigate, useSearchParams, Link } from 'react-router-dom'
 import { useAuth } from '../store/useAuth'
 import { useIsDesktop } from '../components/NavBar'
 import { bg, bg2, bg3, bdr, text, t2, t3, acc, acc2, accbg, red, sans, serif } from '../theme'
@@ -43,6 +43,7 @@ function Hero({ desktop }) {
             <path d="M22 37l9 9 19-19" stroke={acc} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" fill="none" />
           </svg>
         </div>
+        <BackButton desktop={desktop} />
         <HeroCaption desktop={desktop} />
       </div>
     )
@@ -66,8 +67,31 @@ function Hero({ desktop }) {
           : `linear-gradient(to bottom, transparent 55%, ${bg} 100%)`,
         pointerEvents: 'none',
       }} />
+      <BackButton desktop={desktop} />
       <HeroCaption desktop={desktop} />
     </div>
+  )
+}
+
+function BackButton({ desktop }) {
+  return (
+    <Link
+      to="/"
+      style={{
+        position: 'absolute', top: desktop ? 28 : 14, left: desktop ? 28 : 14,
+        display: 'inline-flex', alignItems: 'center', gap: 6,
+        padding: '8px 14px', borderRadius: 999,
+        background: `${bg2}cc`, backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)',
+        border: `1px solid ${bdr}`,
+        color: text, fontSize: 12.5, fontWeight: 600, fontFamily: sans,
+        textDecoration: 'none',
+      }}
+    >
+      <svg width="13" height="13" viewBox="0 0 14 14" fill="none">
+        <path d="M9 2.5L4 7l5 4.5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+      Back
+    </Link>
   )
 }
 

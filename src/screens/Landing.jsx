@@ -74,52 +74,65 @@ function useReveal() {
   return [ref, inView]
 }
 
-function MockFrame({ children }) {
+function MockFrame({ children, align }) {
   return (
     <div style={{
       width: '100%', aspectRatio: '4 / 3', borderRadius: 20, overflow: 'hidden',
-      background: M.panel, border: `1px solid ${bdr}`,
+      background: bg2, border: `1px solid ${bdr}`,
       boxShadow: '0 24px 48px -28px rgba(20,30,50,0.22)',
-      display: 'flex', alignItems: 'center', justifyContent: 'center',
-      flexShrink: 0, padding: '6%', boxSizing: 'border-box',
+      display: 'flex', flexDirection: 'column', alignItems: align || 'center', justifyContent: 'center',
+      flexShrink: 0, padding: '7%', boxSizing: 'border-box',
     }}>
       {children}
     </div>
   )
 }
 
-// ── Step 1 — search bar + a listing card settling in ───────────────────────
+const SEARCH_QUERY = 'Room in Gothenburg'
+const LISTINGS = [
+  { icon: '🏠', title: 'Sunny room near center', meta: 'Gothenburg · $850/mo', badge: 'Verified' },
+  { icon: '🛏️', title: 'Cozy studio downtown', meta: 'Gothenburg · $720/mo', badge: null },
+  { icon: '🔑', title: 'Shared apartment room', meta: 'Gothenburg · $650/mo', badge: 'Verified' },
+]
+
+// ── Step 1 — search bar + a few listing suggestions settling in ────────────
 function DiscoverMockup({ inView }) {
+  const typeDuration = 0.05 * SEARCH_QUERY.length + 0.2
   return (
-    <MockFrame>
-      <div style={{ width: '100%', background: M.bg, borderRadius: 14, border: `1px solid ${M.border}`, padding: '5% 6%', boxShadow: '0 8px 24px -16px rgba(20,30,50,.25)' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: M.panel, borderRadius: 10, padding: '9px 12px', marginBottom: 14 }}>
-          <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="6" cy="6" r="4.5" stroke={M.sub} strokeWidth="1.4" /><path d="M9.2 9.2L12 12" stroke={M.sub} strokeWidth="1.4" strokeLinecap="round" /></svg>
-          <span style={{
-            fontSize: 13, color: M.ink, fontFamily: sans, whiteSpace: 'nowrap', overflow: 'hidden',
-            display: 'inline-block', borderRight: inView ? 'none' : `1.5px solid ${M.blue}`,
-            width: inView ? '13ch' : 0,
-            animation: inView ? 'cs-mock-grow 1.1s steps(13) 0.2s forwards' : 'none',
-            '--w': '13ch',
-          }}>
-            Room in Gothenburg
-          </span>
-        </div>
-        {['🏠', 'Sunny room near center', 'Gothenburg · $850/mo'].length && (
-          <div style={{
-            display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px',
-            background: M.blueSoft, borderRadius: 12,
-            opacity: inView ? 1 : 0, transform: inView ? 'translateY(0)' : 'translateY(10px)',
-            transition: 'opacity 0.5s ease 1.3s, transform 0.5s ease 1.3s',
-          }}>
-            <div style={{ width: 34, height: 34, borderRadius: 9, background: M.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, flexShrink: 0 }}>🏠</div>
-            <div style={{ textAlign: 'left', minWidth: 0 }}>
-              <div style={{ fontSize: 12.5, fontWeight: 700, color: M.ink, fontFamily: sans, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>Sunny room near center</div>
-              <div style={{ fontSize: 11, color: M.sub, fontFamily: sans }}>Gothenburg · $850/mo</div>
+    <MockFrame align="stretch">
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: M.panel, borderRadius: 10, padding: '9px 12px', marginBottom: 12 }}>
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none" style={{ flexShrink: 0 }}><circle cx="6" cy="6" r="4.5" stroke={M.sub} strokeWidth="1.4" /><path d="M9.2 9.2L12 12" stroke={M.sub} strokeWidth="1.4" strokeLinecap="round" /></svg>
+        <span style={{
+          fontSize: 13, color: M.ink, fontFamily: sans, whiteSpace: 'nowrap', overflow: 'hidden',
+          display: 'inline-block', borderRight: inView ? 'none' : `1.5px solid ${M.blue}`,
+          width: inView ? `${SEARCH_QUERY.length}ch` : 0,
+          animation: inView ? `cs-mock-grow ${typeDuration}s steps(${SEARCH_QUERY.length}) 0.2s forwards` : 'none',
+          '--w': `${SEARCH_QUERY.length}ch`,
+        }}>
+          {SEARCH_QUERY}
+        </span>
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+        {LISTINGS.map((l, i) => {
+          const delay = typeDuration + 0.35 + i * 0.35
+          return (
+            <div key={l.title} style={{
+              display: 'flex', alignItems: 'center', gap: 10, padding: '9px 11px',
+              background: i === 0 ? M.blueSoft : M.panel, borderRadius: 12,
+              opacity: inView ? 1 : 0, transform: inView ? 'translateY(0)' : 'translateY(10px)',
+              transition: `opacity 0.5s ease ${delay}s, transform 0.5s ease ${delay}s`,
+            }}>
+              <div style={{ width: 30, height: 30, borderRadius: 8, background: M.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, flexShrink: 0 }}>{l.icon}</div>
+              <div style={{ textAlign: 'left', minWidth: 0 }}>
+                <div style={{ fontSize: 12, fontWeight: 700, color: M.ink, fontFamily: sans, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{l.title}</div>
+                <div style={{ fontSize: 10.5, color: M.sub, fontFamily: sans }}>{l.meta}</div>
+              </div>
+              {l.badge && (
+                <div style={{ marginLeft: 'auto', fontSize: 9, fontWeight: 700, color: M.blueDeep, background: M.bg, borderRadius: 999, padding: '3px 7px', flexShrink: 0 }}>{l.badge}</div>
+              )}
             </div>
-            <div style={{ marginLeft: 'auto', fontSize: 9.5, fontWeight: 700, color: M.blueDeep, background: M.bg, borderRadius: 999, padding: '3px 8px', flexShrink: 0 }}>Verified</div>
-          </div>
-        )}
+          )
+        })}
       </div>
     </MockFrame>
   )
@@ -133,31 +146,31 @@ function MessageMockup({ inView }) {
     { from: 'them', text: 'Perfect, let’s do it 🤝', delay: 1.9 },
   ]
   return (
-    <MockFrame>
-      <div style={{ width: '100%', background: M.bg, borderRadius: 14, border: `1px solid ${M.border}`, padding: '5%', boxShadow: '0 8px 24px -16px rgba(20,30,50,.25)', display: 'flex', flexDirection: 'column', gap: 8 }}>
-        {bubbles.map((b, i) => (
-          <div key={i} style={{
-            alignSelf: b.from === 'me' ? 'flex-end' : 'flex-start',
-            maxWidth: '78%',
-            padding: '8px 12px',
-            borderRadius: b.from === 'me' ? '12px 12px 3px 12px' : '12px 12px 12px 3px',
-            background: b.from === 'me' ? M.blue : M.panel,
-            color: b.from === 'me' ? '#fff' : M.ink,
-            fontSize: 12.5, fontFamily: sans, lineHeight: 1.4, textAlign: 'left',
-            opacity: inView ? 1 : 0,
-            transform: inView ? 'translateY(0) scale(1)' : 'translateY(8px) scale(0.97)',
-            transition: `opacity 0.4s ease ${b.delay}s, transform 0.4s ease ${b.delay}s`,
-          }}>
-            {b.text}
-          </div>
-        ))}
-        <div style={{
-          alignSelf: 'flex-start', marginTop: 2, fontSize: 10.5, fontWeight: 700, color: M.blueDeep,
-          background: M.blueSoft, borderRadius: 999, padding: '4px 10px', fontFamily: sans,
-          opacity: inView ? 1 : 0, transition: 'opacity 0.4s ease 2.6s',
+    <MockFrame align="stretch">
+      {bubbles.map((b, i) => (
+        <div key={i} style={{
+          alignSelf: b.from === 'me' ? 'flex-end' : 'flex-start',
+          maxWidth: '78%',
+          padding: '8px 12px',
+          marginBottom: 8,
+          borderRadius: b.from === 'me' ? '12px 12px 3px 12px' : '12px 12px 12px 3px',
+          background: b.from === 'me' ? M.blue : M.bg,
+          border: b.from === 'me' ? 'none' : `1px solid ${M.border}`,
+          color: b.from === 'me' ? '#fff' : M.ink,
+          fontSize: 13, fontFamily: sans, lineHeight: 1.4, textAlign: 'left',
+          opacity: inView ? 1 : 0,
+          transform: inView ? 'translateY(0) scale(1)' : 'translateY(8px) scale(0.97)',
+          transition: `opacity 0.4s ease ${b.delay}s, transform 0.4s ease ${b.delay}s`,
         }}>
-          Contract ready →
+          {b.text}
         </div>
+      ))}
+      <div style={{
+        alignSelf: 'flex-start', marginTop: 2, fontSize: 11, fontWeight: 700, color: M.blueDeep,
+        background: M.blueSoft, borderRadius: 999, padding: '4px 10px', fontFamily: sans,
+        opacity: inView ? 1 : 0, transition: 'opacity 0.4s ease 2.6s',
+      }}>
+        Contract ready →
       </div>
     </MockFrame>
   )
@@ -167,22 +180,21 @@ function MessageMockup({ inView }) {
 function ContractMockup({ inView }) {
   const lines = [92, 100, 70, 88, 55]
   return (
-    <MockFrame>
-      <div style={{ width: '100%', background: M.bg, borderRadius: 14, border: `1px solid ${M.border}`, padding: '6%', boxShadow: '0 8px 24px -16px rgba(20,30,50,.25)', textAlign: 'left' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 14 }}>
-          <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 1.5l1.4 3 3.3.5-2.4 2.3.6 3.3L7 9l-2.9 1.6.6-3.3L2.3 5l3.3-.5L7 1.5z" fill={M.blue} /></svg>
-          <span style={{ fontSize: 11, fontWeight: 700, color: M.blueDeep, fontFamily: sans, letterSpacing: '.3px' }}>AI drafting…</span>
-        </div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 9 }}>
-          {lines.map((w, i) => (
-            <div key={i} style={{
-              height: 8, borderRadius: 4, background: i === 0 ? M.blue : M.panel,
-              width: inView ? `${w}%` : 0,
-              animation: inView ? `cs-mock-grow 0.7s ease ${0.15 + i * 0.22}s forwards` : 'none',
-              '--w': `${w}%`,
-            }} />
-          ))}
-        </div>
+    <MockFrame align="stretch">
+      <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 16 }}>
+        <svg width="15" height="15" viewBox="0 0 14 14" fill="none"><path d="M7 1.5l1.4 3 3.3.5-2.4 2.3.6 3.3L7 9l-2.9 1.6.6-3.3L2.3 5l3.3-.5L7 1.5z" fill={M.blue} /></svg>
+        <span style={{ fontSize: 12, fontWeight: 700, color: M.blueDeep, fontFamily: sans, letterSpacing: '.3px' }}>AI drafting…</span>
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+        {lines.map((w, i) => (
+          <div key={i} style={{
+            height: 9, borderRadius: 4, background: i === 0 ? M.blue : M.bg,
+            border: i === 0 ? 'none' : `1px solid ${M.border}`,
+            width: inView ? `${w}%` : 0,
+            animation: inView ? `cs-mock-grow 0.7s ease ${0.15 + i * 0.22}s forwards` : 'none',
+            '--w': `${w}%`,
+          }} />
+        ))}
       </div>
     </MockFrame>
   )
@@ -191,20 +203,18 @@ function ContractMockup({ inView }) {
 // ── Step 4 — signature stroke drawing itself ────────────────────────────────
 function SignMockup({ inView }) {
   return (
-    <MockFrame>
-      <div style={{ width: '100%', background: M.bg, borderRadius: 14, border: `1px solid ${M.border}`, padding: '6%', boxShadow: '0 8px 24px -16px rgba(20,30,50,.25)' }}>
-        <div style={{ fontSize: 10.5, fontWeight: 700, color: M.sub, fontFamily: sans, textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: 10, textAlign: 'left' }}>
-          Sign here
-        </div>
-        <svg width="100%" height="72" viewBox="0 0 220 72" fill="none">
-          <path d="M10 58 C 30 20, 55 20, 68 44 S 100 66, 118 30 S 150 8, 168 40 S 200 58, 210 22"
-            stroke={M.blue} strokeWidth="3.2" strokeLinecap="round" fill="none"
-            strokeDasharray="360" strokeDashoffset={inView ? 0 : 360}
-            style={{ transition: 'stroke-dashoffset 1.6s cubic-bezier(.4,0,.2,1) 0.2s' }}
-          />
-          <line x1="4" y1="64" x2="216" y2="64" stroke={M.border} strokeWidth="1.5" strokeDasharray="4 4" />
-        </svg>
+    <MockFrame align="stretch">
+      <div style={{ fontSize: 11.5, fontWeight: 700, color: M.sub, fontFamily: sans, textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: 12, textAlign: 'left' }}>
+        Sign here
       </div>
+      <svg width="100%" height="90" viewBox="0 0 220 72" fill="none">
+        <path d="M10 58 C 30 20, 55 20, 68 44 S 100 66, 118 30 S 150 8, 168 40 S 200 58, 210 22"
+          stroke={M.blue} strokeWidth="3.2" strokeLinecap="round" fill="none"
+          strokeDasharray="360" strokeDashoffset={inView ? 0 : 360}
+          style={{ transition: 'stroke-dashoffset 1.6s cubic-bezier(.4,0,.2,1) 0.2s' }}
+        />
+        <line x1="4" y1="64" x2="216" y2="64" stroke={M.border} strokeWidth="1.5" strokeDasharray="4 4" />
+      </svg>
     </MockFrame>
   )
 }
