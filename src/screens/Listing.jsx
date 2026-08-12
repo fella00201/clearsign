@@ -4,9 +4,12 @@ import { useListings } from '../store/useListings'
 import { useAuth } from '../store/useAuth'
 import { useContracts } from '../store/useContracts'
 import { generateContract } from '../lib/contracts'
-import { findThread, insertThread } from '../lib/supabase'
+import { findThread, insertThread, fetchContractsByListing } from '../lib/supabase'
+import { computeCalendarDays } from '../lib/availability'
 import { CATS, TAGS } from '../data/categories'
-import { bg, bg2, bg3, bg4, bdr, text, t2, t3, acc, amber, sans, serif, CAT_COLORS } from '../theme'
+import { bg, bg2, bg3, bg4, bdr, text, t2, t3, acc, amber, red, sans, serif, CAT_COLORS } from '../theme'
+
+const LISTING_UUID_RE = /^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/i
 
 const BADGE = {
   'b-rental':  { bg: CAT_COLORS.rental.tint,  color: CAT_COLORS.rental.ink,  border: CAT_COLORS.rental.border },
@@ -44,6 +47,161 @@ function Stars({ rating, size = 14 }) {
 
 function fmtDate(iso) {
   return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+}
+
+const DAY_STYLE = {
+  available: { background: bg3, color: t2, border: `1px solid ${bdr}` },
+  booked:    { background: null, color: '#fff', border: 'none' }, // color computed per-contract
+  margin:    { background: bg4, color: t3, border: 'none' },
+  blocked:   { background: `${t3}33`, color: t3, border: 'none' },
+}
+
+function AvailabilityCalendar({ listing, isOwn }) {
+  const updateListing = useListings(s => s.updateListing)
+  const [contracts, setContracts] = useState([])
+  const [cursor, setCursor] = useState(() => { const d = new Date(); return { year: d.getFullYear(), month: d.getMonth() } })
+  const [showManage, setShowManage] = useState(false)
+  const [marginInput, setMarginInput] = useState(listing.bookingMarginDays || 0)
+  const [blockStart, setBlockStart] = useState('')
+  const [blockEnd, setBlockEnd] = useState('')
+  const [blockReason, setBlockReason] = useState('')
+
+  useEffect(() => {
+    if (!LISTING_UUID_RE.test(listing.id)) return
+    fetchContractsByListing(listing.id).then(setContracts).catch(() => {})
+  }, [listing.id])
+
+  const days = computeCalendarDays(listing, contracts, cursor.year, cursor.month)
+  const firstDow = new Date(cursor.year, cursor.month, 1).getDay()
+  const monthLabel = new Date(cursor.year, cursor.month, 1).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
+
+  function shiftMonth(delta) {
+    setCursor(c => {
+      const m = c.month + delta
+      if (m < 0) return { year: c.year - 1, month: 11 }
+      if (m > 11) return { year: c.year + 1, month: 0 }
+      return { year: c.year, month: m }
+    })
+  }
+
+  function saveMargin() {
+    const n = Math.max(0, Number(marginInput) || 0)
+    setMarginInput(n)
+    updateListing(listing.id, { bookingMarginDays: n })
+  }
+
+  function addBlock() {
+    if (!blockStart || !blockEnd || blockEnd < blockStart) return
+    const next = [...(listing.blockedDates || []), { start: blockStart, end: blockEnd, reason: blockReason.trim() }]
+    updateListing(listing.id, { blockedDates: next })
+    setBlockStart(''); setBlockEnd(''); setBlockReason('')
+  }
+
+  function removeBlock(i) {
+    const next = (listing.blockedDates || []).filter((_, idx) => idx !== i)
+    updateListing(listing.id, { blockedDates: next })
+  }
+
+  return (
+    <div style={{ background: bg2, border: `1px solid ${bdr}`, borderRadius: 14, padding: 16, marginBottom: 12 }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+        <div style={{ fontSize: 11, fontWeight: 700, color: t3, textTransform: 'uppercase', letterSpacing: '0.6px' }}>
+          Availability
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+          <button onClick={() => shiftMonth(-1)} style={{ background: 'none', border: 'none', color: t2, cursor: 'pointer', fontSize: 16, padding: '2px 6px' }}>‹</button>
+          <span style={{ fontSize: 12, fontWeight: 600, color: text, minWidth: 92, textAlign: 'center' }}>{monthLabel}</span>
+          <button onClick={() => shiftMonth(1)} style={{ background: 'none', border: 'none', color: t2, cursor: 'pointer', fontSize: 16, padding: '2px 6px' }}>›</button>
+        </div>
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 3, marginBottom: 4 }}>
+        {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((d, i) => (
+          <div key={i} style={{ fontSize: 10, color: t3, textAlign: 'center' }}>{d}</div>
+        ))}
+      </div>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 3 }}>
+        {Array.from({ length: firstDow }).map((_, i) => <div key={`e${i}`} />)}
+        {days.map(day => {
+          const s = DAY_STYLE[day.status]
+          const bookedColor = day.status === 'booked' ? (day.contract?.counterpartyColor || acc) : null
+          return (
+            <div
+              key={day.date}
+              title={day.status === 'blocked' ? (day.reason || 'Blocked') : day.status}
+              style={{
+                aspectRatio: '1', borderRadius: 6, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: 10, fontWeight: 600,
+                background: bookedColor || s.background,
+                color: s.color, border: s.border,
+              }}
+            >
+              {Number(day.date.slice(-2))}
+            </div>
+          )
+        })}
+      </div>
+
+      <div style={{ display: 'flex', gap: 14, marginTop: 12, flexWrap: 'wrap' }}>
+        {[['Booked', acc], ['Margin buffer', bg4], ['Blocked', `${t3}66`]].map(([label, color]) => (
+          <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+            <span style={{ width: 8, height: 8, borderRadius: 3, background: color, display: 'inline-block' }} />
+            <span style={{ fontSize: 10.5, color: t3 }}>{label}</span>
+          </div>
+        ))}
+      </div>
+
+      {isOwn && (
+        <div style={{ marginTop: 14, borderTop: `1px solid ${bdr}`, paddingTop: 12 }}>
+          <button
+            onClick={() => setShowManage(s => !s)}
+            style={{ background: 'none', border: 'none', color: acc, cursor: 'pointer', fontSize: 12, fontWeight: 700, fontFamily: sans, padding: 0 }}
+          >
+            {showManage ? 'Hide availability settings' : 'Manage availability →'}
+          </button>
+
+          {showManage && (
+            <div style={{ marginTop: 12 }}>
+              <div style={{ marginBottom: 12 }}>
+                <label style={{ display: 'block', fontSize: 10.5, fontWeight: 700, color: t2, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 6 }}>
+                  Margin between bookings (days)
+                </label>
+                <input
+                  type="number" min="0" value={marginInput}
+                  onChange={e => setMarginInput(e.target.value)}
+                  onBlur={saveMargin}
+                  style={{ width: 100, background: bg3, border: `1px solid ${bdr}`, borderRadius: 8, padding: '8px 10px', fontSize: 13, fontFamily: sans, color: text, outline: 'none' }}
+                />
+              </div>
+
+              <label style={{ display: 'block', fontSize: 10.5, fontWeight: 700, color: t2, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 6 }}>
+                Block specific dates
+              </label>
+              <div style={{ display: 'flex', gap: 6, marginBottom: 8, flexWrap: 'wrap' }}>
+                <input type="date" value={blockStart} onChange={e => setBlockStart(e.target.value)} style={{ flex: 1, minWidth: 120, background: bg3, border: `1px solid ${bdr}`, borderRadius: 8, padding: '8px 10px', fontSize: 12, fontFamily: sans, color: text, outline: 'none', colorScheme: 'light' }} />
+                <input type="date" value={blockEnd} onChange={e => setBlockEnd(e.target.value)} style={{ flex: 1, minWidth: 120, background: bg3, border: `1px solid ${bdr}`, borderRadius: 8, padding: '8px 10px', fontSize: 12, fontFamily: sans, color: text, outline: 'none', colorScheme: 'light' }} />
+              </div>
+              <div style={{ display: 'flex', gap: 6 }}>
+                <input type="text" placeholder="Reason (optional)" value={blockReason} onChange={e => setBlockReason(e.target.value)} style={{ flex: 1, background: bg3, border: `1px solid ${bdr}`, borderRadius: 8, padding: '8px 10px', fontSize: 12, fontFamily: sans, color: text, outline: 'none' }} />
+                <button onClick={addBlock} style={{ padding: '8px 14px', borderRadius: 8, border: 'none', background: acc, color: '#fff', fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: sans, flexShrink: 0 }}>Add</button>
+              </div>
+
+              {(listing.blockedDates || []).length > 0 && (
+                <div style={{ marginTop: 10, display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  {listing.blockedDates.map((b, i) => (
+                    <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: bg3, border: `1px solid ${bdr}`, borderRadius: 8, padding: '7px 10px' }}>
+                      <span style={{ fontSize: 11.5, color: t2 }}>{b.start} → {b.end}{b.reason ? ` · ${b.reason}` : ''}</span>
+                      <button onClick={() => removeBlock(i)} style={{ background: 'none', border: 'none', color: red, cursor: 'pointer', fontSize: 12, fontWeight: 700, fontFamily: sans }}>Remove</button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  )
 }
 
 // ── Screen ─────────────────────────────────────────────────────────────────
@@ -253,6 +411,9 @@ export default function Listing() {
           </div>
         </div>
 
+        {/* Availability calendar — rentals only, the only category with real date-range semantics */}
+        {listing.cat === 'rental' && <AvailabilityCalendar listing={listing} isOwn={isOwn} />}
+
         {/* Owner card */}
         <div style={{
           display: 'flex', alignItems: 'center', gap: 10,
@@ -356,6 +517,17 @@ export default function Listing() {
             disabled={generating}
             onClick={async () => {
               if (generating || !user) return
+
+              // Same split as Chat.jsx: rental-backed seek listings (looking
+              // for a room / parking) get the configure step; other seek
+              // types keep today's immediate generation.
+              if (['seek_room', 'seek_parking'].includes(listing.subcat)) {
+                navigate('/configure-contract', {
+                  state: { listing, otherName: listing.ownerName, otherEmail: listing.ownerEmail, otherColor: listing.ownerColor },
+                })
+                return
+              }
+
               setGenerating(true)
               try {
                 const { contractText, templateId, templateVersion } = await generateContract(listing, user.name, listing.ownerName)

@@ -9,12 +9,16 @@ import { resolveTemplate, TEMPLATE_VERSION } from '../data/contractTemplates'
  * "Additional terms" paragraph appended after the template; it never
  * authors or alters a core clause.
  *
+ * @param {Object} [options]  structured term/options from ConfigureContract
+ *   (rental deal types only — see ../data/contractTemplates.js termClauses()).
+ *   Omitted for non-rental deal types, which fall back to each template's
+ *   generic notice-period clause.
  * @returns {Promise<{contractText: string, templateId: string, templateVersion: number}>}
  */
-export async function generateContract(listing, providerName, seekerName) {
+export async function generateContract(listing, providerName, seekerName, options) {
   const today = new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
   const { dealType, render } = resolveTemplate(listing.subcat)
-  const base = render({ listing, providerName, seekerName, today, location: listing.location })
+  const base = render({ listing, providerName, seekerName, today, location: listing.location, options })
 
   const additionalTerms = await polishAdditionalTerms(listing)
   const contractText = additionalTerms

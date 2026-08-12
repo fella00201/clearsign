@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { SEED } from '../data/seed';
-import { fetchListings, insertListing } from '../lib/supabase';
+import { fetchListings, insertListing, updateListingRemote } from '../lib/supabase';
 
 export const useListings = create((set, get) => ({
   listings:   [],
@@ -71,6 +71,16 @@ export const useListings = create((set, get) => ({
         JSON.stringify(existing.map(l => l.id === id ? { ...l, ...updates } : l))
       );
     } catch {}
+
+    // Mirror to Supabase (fire-and-forget). Only meaningful once the listing
+    // has a real Supabase UUID — a local-only id (Supabase insert never
+    // landed) has nothing to mirror to yet.
+    const UUID_RE = /^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/i;
+    if (UUID_RE.test(id)) {
+      updateListingRemote(id, updates).catch(err =>
+        console.warn('[Supabase] updateListing failed:', err.message)
+      );
+    }
   },
 
   addListing: async (listing) => {

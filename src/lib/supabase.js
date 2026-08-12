@@ -37,6 +37,8 @@ function mapRow(row) {
     ownerEmail:      owner.email         ?? '',
     ownerColor:      owner.avatar_color  ?? '#5b8fff',
     ownerId:         row.owner_id        ?? null,
+    bookingMarginDays: row.booking_margin_days ?? 0,
+    blockedDates:    row.blocked_dates    ?? [],
     reviewCount:     row.review_count    ?? 0,
     avgRating:       parseFloat(row.avg_rating) || 0,
     status:          row.status,
@@ -144,6 +146,25 @@ export async function insertListing(listing) {
   return result;
 }
 
+/**
+ * Update a listing's booking settings (margin / owner-blocked dates).
+ * Pass only the camelCase fields you want to change.
+ * @param {string} id  Supabase UUID of the listing
+ * @param {Object} updates  { bookingMarginDays?, blockedDates? }
+ */
+export async function updateListingRemote(id, updates) {
+  const mapped = {};
+  if (updates.bookingMarginDays !== undefined) mapped.booking_margin_days = updates.bookingMarginDays;
+  if (updates.blockedDates      !== undefined) mapped.blocked_dates       = updates.blockedDates;
+
+  const { error } = await supabase
+    .from('listings')
+    .update(mapped)
+    .eq('id', id);
+
+  if (error) throw error;
+}
+
 // ── Contracts ──────────────────────────────────────────────────────────────
 
 /**
@@ -158,6 +179,12 @@ function mapContractRow(row) {
     contractText:         row.contract_text          ?? '',
     templateId:           row.template_id            ?? null,
     templateVersion:      row.template_version        ?? null,
+    termType:             row.term_type              ?? null,
+    startDate:            row.start_date             ?? null,
+    endDate:              row.end_date               ?? null,
+    noticePeriodDays:     row.notice_period_days      ?? null,
+    endedAt:              row.ended_at               ?? null,
+    options:              row.options                ?? {},
     creatorName:          row.creator_name           ?? '',
     creatorEmail:         row.creator_email          ?? '',
     creatorColor:         row.creator_color          ?? '#5b8fff',
@@ -189,6 +216,24 @@ export async function fetchContracts(userEmail) {
 }
 
 /**
+ * Fetch every contract for a listing, regardless of who the parties are —
+ * used for the availability/collision check, which needs to see bookings
+ * from other conversations about the same listing, not just the current
+ * user's own contracts (unlike fetchContracts()).
+ * @param {string} listingId
+ * @returns {Promise<Array>}  contracts in app shape
+ */
+export async function fetchContractsByListing(listingId) {
+  const { data, error } = await supabase
+    .from('contracts')
+    .select('*')
+    .eq('listing_id', listingId);
+
+  if (error) throw error;
+  return (data ?? []).map(mapContractRow);
+}
+
+/**
  * Insert a new contract into Supabase and return the saved row.
  * Sig data (base64 PNGs) is intentionally not stored — stays in localStorage.
  *
@@ -204,6 +249,11 @@ export async function insertContract(doc) {
       contract_text:     doc.contractText      ?? '',
       template_id:       doc.templateId        ?? null,
       template_version:  doc.templateVersion   ?? null,
+      term_type:         doc.termType          ?? null,
+      start_date:        doc.startDate         ?? null,
+      end_date:          doc.endDate           ?? null,
+      notice_period_days: doc.noticePeriodDays ?? null,
+      options:           doc.options           ?? {},
       creator_name:      doc.creatorName       ?? '',
       creator_email:     doc.creatorEmail      ?? '',
       creator_color:     doc.creatorColor      ?? '#5b8fff',

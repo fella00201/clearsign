@@ -32,6 +32,46 @@ function hasTag(listing, tag) {
   return (listing.tags || []).some(t => t.toLowerCase() === tag.toLowerCase())
 }
 
+function fmtDate(iso) {
+  if (!iso) return 'Not specified'
+  const d = new Date(`${iso}T00:00:00`)
+  return isNaN(d) ? iso : d.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
+}
+
+// Deterministic term/options clauses for the 5 rental deal types — built
+// from the structured fields set on the ConfigureContract screen, never by
+// AI. `options` is undefined for contracts created outside that screen
+// (non-rental deal types, or any caller that skips it), in which case this
+// falls back to `fallbackLine` so every template still reads as complete.
+function termClauses(options, fallbackLine) {
+  if (!options || !options.termType) return [fallbackLine]
+
+  const lines = []
+  if (options.termType === 'fixed') {
+    lines.push(`This agreement runs from ${fmtDate(options.startDate)} to ${fmtDate(options.endDate)} and ends automatically on that date unless renewed by mutual agreement.`)
+    if (options.autoRenew) {
+      lines.push('After the end date, this agreement automatically continues on a month-to-month basis unless either party gives at least 30 days’ written notice to end it.')
+    }
+    if (options.earlyTerminationFee) {
+      lines.push(`Either party ending this agreement before ${fmtDate(options.endDate)} agrees to pay an early termination fee of ${options.earlyTerminationFee}.`)
+    }
+  } else {
+    lines.push(`This agreement begins on ${fmtDate(options.startDate)} and continues until either party ends it by giving at least ${options.noticePeriodDays || 30} days’ written notice.`)
+  }
+
+  if (options.petsAllowed === true)  lines.push('Pets are permitted, subject to reasonable house rules.')
+  if (options.petsAllowed === false) lines.push('Pets are not permitted.')
+  if (options.smokingAllowed === true)  lines.push('Smoking is permitted in designated areas only.')
+  if (options.smokingAllowed === false) lines.push('Smoking is not permitted on the property.')
+  if (options.sublettingAllowed === true)  lines.push('Subletting is permitted with the Landlord’s/Owner’s prior written consent.')
+  if (options.sublettingAllowed === false) lines.push('Subletting is not permitted.')
+  if (options.lateFee?.amount) {
+    lines.push(`Payment not received within ${options.lateFee.graceDays || 0} days of the due date incurs a late fee of ${options.lateFee.amount}.`)
+  }
+
+  return lines
+}
+
 function assemble({ titleLabel, today, providerName, seekerName, providerRole, seekerRole, location, clauses }) {
   const numbered = clauses.map((c, i) => `${i + 1}. ${c}`).join('\n\n')
   return [
@@ -54,7 +94,7 @@ const TEMPLATES = {
       hasTag(ctx.listing, 'Deposit required')
         ? 'A security deposit equal to one period’s rent is due before move-in and will be returned within 14 days of move-out, less any deduction for damage beyond normal wear and tear.'
         : 'No security deposit is required unless separately agreed in writing.',
-      'Either party may end this agreement by giving at least 30 days’ written notice, or as otherwise agreed.',
+      ...termClauses(ctx.options, 'Either party may end this agreement by giving at least 30 days’ written notice, or as otherwise agreed.'),
       'The Tenant agrees to keep the room in reasonable condition and report damage promptly. The Landlord agrees to keep the property safe and habitable.',
       'Utilities, bills, and shared-space rules are as described in the listing unless otherwise agreed in writing.',
     ],
@@ -66,7 +106,7 @@ const TEMPLATES = {
       `Fee: ${fmtPrice(ctx.listing)}, due in advance for each period.`,
       `Available from: ${fmtField(ctx.listing.available_from)}.`,
       'The Renter may park only the vehicle(s) agreed between the parties and must not sublet the space.',
-      'Either party may end this agreement with at least 7 days’ written notice.',
+      ...termClauses(ctx.options, 'Either party may end this agreement with at least 7 days’ written notice.'),
       'The Owner is not responsible for damage, theft, or loss affecting the Renter’s vehicle while parked.',
     ],
   }),
@@ -76,7 +116,7 @@ const TEMPLATES = {
     clauses: [
       `Fee: ${fmtPrice(ctx.listing)}, due in advance for each period.`,
       'The Renter may store only lawful, non-hazardous, non-perishable items and must not exceed the space’s stated capacity.',
-      'Either party may end this agreement with at least 14 days’ written notice; the Renter must remove all belongings by the end date.',
+      ...termClauses(ctx.options, 'Either party may end this agreement with at least 14 days’ written notice; the Renter must remove all belongings by the end date.'),
       'The Owner is not responsible for loss or damage to stored items unless caused by the Owner’s negligence.',
     ],
   }),
@@ -89,6 +129,7 @@ const TEMPLATES = {
         ? 'A refundable damage deposit is due before the event and will be returned within 7 days, less any deduction for damage or excess cleaning.'
         : 'No damage deposit is required unless separately agreed in writing.',
       'Cancellations made at least 7 days before the booking are eligible for a full refund of any amount paid; later cancellations are non-refundable unless the Host agrees otherwise.',
+      ...termClauses(ctx.options, 'The booking covers the date/duration stated above only; any extension must be agreed separately.'),
       'The Renter is responsible for the conduct of their guests and for leaving the venue in the condition it was received.',
     ],
   }),
@@ -101,7 +142,7 @@ const TEMPLATES = {
         ? 'A refundable deposit is due at pickup and will be returned on return of the equipment in its original condition.'
         : 'No deposit is required unless separately agreed in writing.',
       'The Renter is responsible for loss, theft, or damage to the equipment while in their possession, normal wear and tear excepted.',
-      'The equipment must be returned by the agreed return date and time; late returns may incur an additional daily fee.',
+      ...termClauses(ctx.options, 'The equipment must be returned by the agreed return date and time; late returns may incur an additional daily fee.'),
     ],
   }),
 

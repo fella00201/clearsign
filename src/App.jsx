@@ -10,6 +10,7 @@ import Listing from './screens/Listing'
 import PostListing from './screens/PostListing'
 import Messages from './screens/Messages'
 import Chat from './screens/Chat'
+import ConfigureContract from './screens/ConfigureContract'
 import Contract from './screens/Contract'
 import Signing from './screens/Signing'
 import Sealed from './screens/Sealed'
@@ -77,6 +78,7 @@ export default function App() {
         <Route path="/post"           element={<RequireAuth><PostListing /></RequireAuth>} />
         <Route path="/messages"       element={<RequireAuth><Messages /></RequireAuth>} />
         <Route path="/chat/:threadId" element={<RequireAuth><Chat /></RequireAuth>} />
+        <Route path="/configure-contract" element={<RequireAuth><ConfigureContract /></RequireAuth>} />
         <Route path="/contract/:id"   element={<RequireAuth><Contract /></RequireAuth>} />
         <Route path="/signing"        element={<RequireAuth><Signing /></RequireAuth>} />
         <Route path="/sealed"         element={<RequireAuth><Sealed /></RequireAuth>} />

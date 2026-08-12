@@ -334,6 +334,17 @@ export default function Chat() {
 
   async function createContract() {
     if (generating || !listing || !user) return
+
+    // Rentals get a configure step first (term, dates, optional clauses,
+    // reuse a previous contract, live date-collision check) — everything
+    // else keeps today's one-click immediate generation.
+    if (listing.cat === 'rental') {
+      navigate('/configure-contract', {
+        state: { listing, otherName: other.name, otherEmail: other.email, otherColor: other.color },
+      })
+      return
+    }
+
     setGenerating(true)
     try {
       const { contractText, templateId, templateVersion } = await generateContract(listing, user.name, other.name)
