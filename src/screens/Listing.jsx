@@ -51,7 +51,7 @@ function fmtDate(iso) {
 
 const DAY_STYLE = {
   available: { background: bg3, color: t2, border: `1px solid ${bdr}` },
-  booked:    { background: null, color: '#fff', border: 'none' }, // color computed per-contract
+  booked:    { background: acc, color: '#fff', border: 'none' }, // matches the "Booked" legend swatch
   margin:    { background: bg4, color: t3, border: 'none' },
   blocked:   { background: `${t3}33`, color: t3, border: 'none' },
 }
@@ -124,7 +124,6 @@ function AvailabilityCalendar({ listing, isOwn }) {
         {Array.from({ length: firstDow }).map((_, i) => <div key={`e${i}`} />)}
         {days.map(day => {
           const s = DAY_STYLE[day.status]
-          const bookedColor = day.status === 'booked' ? (day.contract?.counterpartyColor || acc) : null
           return (
             <div
               key={day.date}
@@ -132,7 +131,7 @@ function AvailabilityCalendar({ listing, isOwn }) {
               style={{
                 aspectRatio: '1', borderRadius: 6, display: 'flex', alignItems: 'center', justifyContent: 'center',
                 fontSize: 10, fontWeight: 600,
-                background: bookedColor || s.background,
+                background: s.background,
                 color: s.color, border: s.border,
               }}
             >

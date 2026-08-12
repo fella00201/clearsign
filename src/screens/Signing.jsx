@@ -4,6 +4,18 @@ import { useContracts } from '../store/useContracts'
 import { useAuth } from '../store/useAuth'
 import { bg, bg2, bg3, bdr, text, t2, t3, acc, green, sans, serif } from '../theme'
 
+function notifyOtherParty({ otherEmail, contractId, listingId, title, body }) {
+  try {
+    const notifKey = `cs_notifs_${otherEmail}`
+    const existing = JSON.parse(localStorage.getItem(notifKey) || '[]')
+    const notif = {
+      id: Math.random().toString(36).slice(2, 10), type: 'contract_request',
+      title, body, at: new Date().toISOString(), read: false, contractId, listingId,
+    }
+    localStorage.setItem(notifKey, JSON.stringify([notif, ...existing]))
+  } catch {}
+}
+
 export default function Signing() {
   const navigate      = useNavigate()
   const user          = useAuth(s => s.user)
@@ -76,8 +88,18 @@ export default function Signing() {
 
     const nowCreatorSigned      = role === 'creator'      ? true : !!activeDoc.creatorSignedAt
     const nowCounterpartySigned = role === 'counterparty' ? true : !!activeDoc.counterpartySignedAt
+    const sealed = nowCreatorSigned && nowCounterpartySigned
+    const otherEmail = role === 'creator' ? activeDoc.counterpartyEmail : activeDoc.creatorEmail
 
-    if (nowCreatorSigned && nowCounterpartySigned) {
+    notifyOtherParty({
+      otherEmail, contractId: activeDoc.id, listingId: activeDoc.listingId,
+      title: sealed ? 'Contract sealed!' : 'Contract signed',
+      body: sealed
+        ? `${user.name} signed — your contract for "${activeDoc.listingTitle}" is now sealed!`
+        : `${user.name} signed the contract for "${activeDoc.listingTitle}" — it's ready for your signature.`,
+    })
+
+    if (sealed) {
       sealContract(activeDoc.id)
       navigate('/sealed')
     } else {

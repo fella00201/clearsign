@@ -76,8 +76,9 @@ function Field({ label, children, hint, info }) {
   )
 }
 
-function TriToggle({ label, value, onChange, info }) {
-  const opts = [['Not specified', null], ['Allowed', true], ['Not allowed', false]]
+function TriToggle({ label, value, onChange, info, labels }) {
+  const [unsetLabel, onLabel, offLabel] = labels || ['Not specified', 'Allowed', 'Not allowed']
+  const opts = [[unsetLabel, null], [onLabel, true], [offLabel, false]]
   return (
     <div style={{ marginBottom: 14 }}>
       <label style={labelStyle}>{label}{info && <InfoTip text={info} />}</label>
@@ -192,12 +193,14 @@ export default function ConfigureContract() {
   const [depositReturnDays, setDepositReturnDays] = useState(seed.depositReturnDays || 14)
   const [guestsAllowed, setGuestsAllowed] = useState(seed.guestsAllowed ?? null)
   const [utilitiesIncluded, setUtilitiesIncluded] = useState(seed.utilitiesIncluded ?? null)
+  const [utilitiesResponsibility, setUtilitiesResponsibility] = useState(seed.utilitiesResponsibility || '')
   const [quietHoursEnabled, setQuietHoursEnabled] = useState(!!seed.quietHoursEnabled)
   const [quietHoursStart, setQuietHoursStart] = useState(seed.quietHoursStart || '22:00')
   const [quietHoursEnd, setQuietHoursEnd] = useState(seed.quietHoursEnd || '08:00')
   const [governingLaw, setGoverningLaw] = useState(seed.governingLaw || '')
   const [disputeResolution, setDisputeResolution] = useState(seed.disputeResolution || '')
   const [noticeDeliveryMethod, setNoticeDeliveryMethod] = useState(seed.noticeDeliveryMethod || '')
+  const [additionalRules, setAdditionalRules] = useState(seed.additionalRules || '')
   const [generating, setGenerating] = useState(false)
 
   useEffect(() => { if (user?.email) loadContracts(user.email) }, [loadContracts, user?.email])
@@ -264,12 +267,14 @@ export default function ConfigureContract() {
     setDepositReturnDays(o.depositReturnDays || 14)
     setGuestsAllowed(o.guestsAllowed ?? null)
     setUtilitiesIncluded(o.utilitiesIncluded ?? null)
+    setUtilitiesResponsibility(o.utilitiesResponsibility || '')
     setQuietHoursEnabled(!!o.quietHoursEnabled)
     setQuietHoursStart(o.quietHoursStart || '22:00')
     setQuietHoursEnd(o.quietHoursEnd || '08:00')
     setGoverningLaw(o.governingLaw || '')
     setDisputeResolution(o.disputeResolution || '')
     setNoticeDeliveryMethod(o.noticeDeliveryMethod || '')
+    setAdditionalRules(o.additionalRules || '')
   }
 
   const candidateEnd = termType === 'fixed' ? endDate : null
@@ -302,10 +307,12 @@ export default function ConfigureContract() {
     depositAmount: depositAmount ? Number(depositAmount) : null,
     depositReturnDays: Number(depositReturnDays) || 14,
     guestsAllowed, utilitiesIncluded,
+    utilitiesResponsibility: utilitiesIncluded === false ? (utilitiesResponsibility || null) : null,
     quietHoursEnabled, quietHoursStart, quietHoursEnd,
     governingLaw: governingLaw.trim() || null,
     disputeResolution: disputeResolution || null,
     noticeDeliveryMethod: noticeDeliveryMethod || null,
+    additionalRules: additionalRules.trim() || null,
   }
   const liveDiff = isEditing ? diffOptions(editingContract.options, liveOptions) : []
 
@@ -417,7 +424,11 @@ export default function ConfigureContract() {
 
           <div style={{ display: 'flex', gap: 8 }}>
             <div style={{ flex: 1 }}>
-              <Field label="Due day (optional)" hint="Day of the period rent is due, e.g. 1.">
+              <Field
+                label="Due day (optional)"
+                hint="Day of the period rent is due, e.g. 1."
+                info="Which day of each billing period the rent must be paid by, e.g. 1 means the 1st of every month. Leave blank if there's no fixed due day (e.g. a one-off booking fee)."
+              >
                 <input type="number" min="1" max="31" placeholder="e.g. 1" value={dueDay} onChange={e => setDueDay(e.target.value)} style={inputCss} />
               </Field>
             </div>
@@ -502,11 +513,29 @@ export default function ConfigureContract() {
           <TriToggle label="Smoking" value={smokingAllowed} onChange={setSmokingAllowed} />
           <TriToggle label="Subletting" value={sublettingAllowed} onChange={setSublettingAllowed} info="Whether the tenant is allowed to rent out the room/space to someone else during their stay." />
           <TriToggle label="Overnight guests" value={guestsAllowed} onChange={setGuestsAllowed} />
-          <TriToggle label="Utilities included" value={utilitiesIncluded} onChange={setUtilitiesIncluded} info="Whether utilities (electricity, water, internet, etc.) are included in the rent or billed separately." />
+          <TriToggle
+            label="Utilities included"
+            value={utilitiesIncluded}
+            onChange={v => { setUtilitiesIncluded(v); if (v !== false) setUtilitiesResponsibility('') }}
+            labels={['Not specified', 'Included', 'Not included']}
+            info="Whether electricity, water, internet, and similar bills are included in the rent, or billed separately. If billed separately, you can specify below whose job it is to pay them."
+          />
+          {utilitiesIncluded === false && (
+            <div style={{ marginBottom: 14, marginTop: -6 }}>
+              <label style={{ ...labelStyle, fontSize: 10 }}>Who pays the utility bills?</label>
+              <select value={utilitiesResponsibility} onChange={e => setUtilitiesResponsibility(e.target.value)} style={{ ...inputCss, cursor: 'pointer', appearance: 'none' }}>
+                <option value="">Not specified</option>
+                <option value="tenant">Tenant/Renter</option>
+                <option value="landlord">Landlord/Owner</option>
+                <option value="split">Split between both</option>
+              </select>
+            </div>
+          )}
 
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: quietHoursEnabled ? 10 : 14 }}>
             <input type="checkbox" id="quiethours" checked={quietHoursEnabled} onChange={e => setQuietHoursEnabled(e.target.checked)} style={{ width: 16, height: 16 }} />
             <label htmlFor="quiethours" style={{ fontSize: 13, color: text, cursor: 'pointer' }}>Quiet hours</label>
+            <InfoTip text="Hours during which noise (loud music, parties, etc.) should be kept to a minimum, e.g. 22:00 to 08:00 overnight." />
           </div>
           {quietHoursEnabled && (
             <div style={{ display: 'flex', gap: 8, marginBottom: 14, alignItems: 'center' }}>
@@ -552,10 +581,17 @@ export default function ConfigureContract() {
         </Section>
 
         <Section title="Legal (optional)">
-          <Field label="Governing law" hint="e.g. the State of Texas, USA — leave blank to omit.">
+          <Field
+            label="Governing law"
+            hint="e.g. the State of Texas, USA — leave blank to omit."
+            info="Which region's laws apply if there's ever a legal dispute — normally wherever the rental property is located. This only matters if things go wrong; most rentals never need it."
+          >
             <input type="text" placeholder="Leave blank to omit" value={governingLaw} onChange={e => setGoverningLaw(e.target.value)} style={inputCss} />
           </Field>
-          <Field label="Dispute resolution">
+          <Field
+            label="Dispute resolution"
+            info="How the two of you agree to try to resolve a disagreement. Direct negotiation means just talking it out; mediation brings in a neutral third party; small claims court is the formal legal route for smaller amounts."
+          >
             <select value={disputeResolution} onChange={e => setDisputeResolution(e.target.value)} style={{ ...inputCss, cursor: 'pointer', appearance: 'none' }}>
               <option value="">Not specified</option>
               <option value="direct_negotiation">Direct negotiation</option>
@@ -563,14 +599,24 @@ export default function ConfigureContract() {
               <option value="small_claims">Small claims court</option>
             </select>
           </Field>
-          <div style={{ marginBottom: 0 }}>
-            <label style={labelStyle}>Notice delivery method</label>
+          <Field
+            label="Notice delivery method"
+            info="How official notices — like ending the contract or a late-payment warning — must be delivered to count as valid under this agreement."
+          >
             <select value={noticeDeliveryMethod} onChange={e => setNoticeDeliveryMethod(e.target.value)} style={{ ...inputCss, cursor: 'pointer', appearance: 'none' }}>
               <option value="">Not specified</option>
               <option value="email">Email</option>
               <option value="written">Written (in person or by mail)</option>
               <option value="in_app">In-app message</option>
             </select>
+          </Field>
+          <div style={{ marginBottom: 0 }}>
+            <label style={labelStyle}>Additional rules (optional)</label>
+            <textarea
+              rows={3} placeholder="Any other rules or terms you want in writing — e.g. no smoking on the balcony, shared laundry schedule…"
+              value={additionalRules} onChange={e => setAdditionalRules(e.target.value)}
+              style={{ ...inputCss, resize: 'vertical', fontFamily: sans }}
+            />
           </div>
         </Section>
 

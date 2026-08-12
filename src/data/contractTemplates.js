@@ -64,6 +64,12 @@ const NOTICE_LABELS = {
   in_app: 'a message through ClearSign',
 }
 
+const UTIL_RESPONSIBILITY_LABELS = {
+  tenant: ' The Tenant/Renter is responsible for setting up and paying these bills directly.',
+  landlord: ' The Landlord/Owner remains responsible for these bills even though they are not included in the rent/fee.',
+  split: ' The parties will split these bills as separately agreed.',
+}
+
 // Rent amount — pulled from the listing's advertised price by default, but
 // overridden by a per-contract rentAmount when the parties negotiated a
 // different figure via Configure Contract.
@@ -134,8 +140,10 @@ function termClauses(options, fallbackLine) {
   if (options.sublettingAllowed === false) lines.push('Subletting is not permitted.')
   if (options.guestsAllowed === true)  lines.push('Overnight guests are permitted, subject to reasonable house rules.')
   if (options.guestsAllowed === false) lines.push('Overnight guests are not permitted without the other party’s prior consent.')
-  if (options.utilitiesIncluded === true)  lines.push('Utilities are included in the rent/fee stated above.')
-  if (options.utilitiesIncluded === false) lines.push('Utilities are billed separately and are not included in the rent/fee stated above.')
+  if (options.utilitiesIncluded === true)  lines.push('Utilities (electricity, water, internet, and similar) are included in the rent/fee stated above.')
+  if (options.utilitiesIncluded === false) {
+    lines.push(`Utilities (electricity, water, internet, and similar) are billed separately and are not included in the rent/fee stated above.${UTIL_RESPONSIBILITY_LABELS[options.utilitiesResponsibility] || ''}`)
+  }
   if (options.quietHoursEnabled && options.quietHoursStart && options.quietHoursEnd) {
     lines.push(`Quiet hours apply from ${options.quietHoursStart} to ${options.quietHoursEnd}.`)
   }
@@ -151,6 +159,12 @@ function termClauses(options, fallbackLine) {
   }
   if (options.noticeDeliveryMethod && NOTICE_LABELS[options.noticeDeliveryMethod]) {
     lines.push(`Formal notices under this agreement must be given via ${NOTICE_LABELS[options.noticeDeliveryMethod]}.`)
+  }
+
+  // Verbatim, party-authored addendum — never AI-generated, unlike every
+  // other clause here which is assembled from structured fields.
+  if (options.additionalRules && options.additionalRules.trim()) {
+    lines.push(`Additional terms: ${options.additionalRules.trim()}`)
   }
 
   return lines

@@ -281,6 +281,27 @@ export default function Chat() {
     return () => supabase.removeChannel(channel)
   }, [threadId, user?.email])
 
+  // Realtime subscription — refresh the persistent contract status card the
+  // moment the other party signs (or otherwise updates) a contract for this
+  // listing, without requiring the user to leave and reopen the thread.
+  useEffect(() => {
+    if (!thread?.listingId || !user?.email || !UUID_RE.test(thread.listingId)) return
+
+    const channel = supabase
+      .channel('contracts-' + thread.listingId)
+      .on('postgres_changes', {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'contracts',
+        filter: 'listing_id=eq.' + thread.listingId,
+      }, () => {
+        loadContracts(user.email)
+      })
+      .subscribe()
+
+    return () => supabase.removeChannel(channel)
+  }, [thread?.listingId, user?.email, loadContracts])
+
   // Mark all unread messages from the other party as read, then refresh badge
   useEffect(() => {
     if (!threadId || !user?.email) return

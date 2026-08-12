@@ -295,8 +295,9 @@ function InfoTip({ tip }) {
   )
 }
 
-function TriToggle({ label, value, onChange, info }) {
-  const opts = [['Not specified', null], ['Allowed', true], ['Not allowed', false]]
+function TriToggle({ label, value, onChange, info, labels }) {
+  const [unsetLabel, onLabel, offLabel] = labels || ['Not specified', 'Allowed', 'Not allowed']
+  const opts = [[unsetLabel, null], [onLabel, true], [offLabel, false]]
   return (
     <div style={{ marginBottom: 14 }}>
       <label style={labelStyle}>{label}{info && <InfoTip tip={info} />}</label>
@@ -337,9 +338,10 @@ function RentalTerms({ state }) {
     autoRenew, setAutoRenew, earlyFee, setEarlyFee,
     dueDay, setDueDay, prorate, setProrate, paymentMethod, setPaymentMethod,
     depositAmt, setDepositAmt, depositReturnDays, setDepositReturnDays,
-    guests, setGuests, utilities, setUtilities,
+    guests, setGuests, utilities, setUtilities, utilitiesResp, setUtilitiesResp,
     quietHoursOn, setQuietHoursOn, quietStart, setQuietStart, quietEnd, setQuietEnd,
     governingLaw, setGoverningLaw, disputeResolution, setDisputeResolution, noticeMethod, setNoticeMethod,
+    additionalRules, setAdditionalRules,
   } = state
 
   return (
@@ -403,7 +405,10 @@ function RentalTerms({ state }) {
 
           <div style={{ display: 'flex', gap: 8, marginBottom: 14 }}>
             <div style={{ flex: 1 }}>
-              <label style={{ ...labelStyle, fontSize: 10 }}>Rent due day (optional)</label>
+              <label style={{ ...labelStyle, fontSize: 10 }}>
+                Rent due day (optional)
+                <InfoTip tip="Which day of each billing period the rent must be paid by, e.g. 1 means the 1st of every month. Leave blank if there's no fixed due day." />
+              </label>
               <input type="number" min="1" max="31" placeholder="e.g. 1" value={dueDay} onChange={e => setDueDay(e.target.value)} style={baseInput} />
             </div>
             <div style={{ flex: 1 }}>
@@ -426,11 +431,29 @@ function RentalTerms({ state }) {
           <TriToggle label="Smoking" value={smoking} onChange={setSmoking} />
           <TriToggle label="Subletting" value={subletting} onChange={setSubletting} info="Whether the tenant is allowed to rent out the room/space to someone else during their stay." />
           <TriToggle label="Overnight guests" value={guests} onChange={setGuests} />
-          <TriToggle label="Utilities included" value={utilities} onChange={setUtilities} info="Whether utilities (electricity, water, internet, etc.) are included in the rent or billed separately." />
+          <TriToggle
+            label="Utilities included"
+            value={utilities}
+            onChange={v => { setUtilities(v); if (v !== false) setUtilitiesResp('') }}
+            labels={['Not specified', 'Included', 'Not included']}
+            info="Whether electricity, water, internet, and similar bills are included in the rent, or billed separately. If billed separately, specify below whose job it is to pay them."
+          />
+          {utilities === false && (
+            <div style={{ marginBottom: 14, marginTop: -6 }}>
+              <label style={{ ...labelStyle, fontSize: 10 }}>Who pays the utility bills?</label>
+              <select value={utilitiesResp} onChange={e => setUtilitiesResp(e.target.value)} style={{ ...selectStyle, width: '100%', boxSizing: 'border-box' }}>
+                <option value="">Not specified</option>
+                <option value="tenant">Tenant/Renter</option>
+                <option value="landlord">Landlord/Owner</option>
+                <option value="split">Split between both</option>
+              </select>
+            </div>
+          )}
 
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: quietHoursOn ? 10 : 14 }}>
             <input type="checkbox" id="def-quiethours" checked={quietHoursOn} onChange={e => setQuietHoursOn(e.target.checked)} style={{ width: 16, height: 16 }} />
             <label htmlFor="def-quiethours" style={{ fontSize: 13, color: text, cursor: 'pointer' }}>Quiet hours</label>
+            <InfoTip tip="Hours during which noise (loud music, parties, etc.) should be kept to a minimum, e.g. 22:00 to 08:00 overnight." />
           </div>
           {quietHoursOn && (
             <div style={{ display: 'flex', gap: 8, marginBottom: 14, alignItems: 'center' }}>
@@ -476,21 +499,31 @@ function RentalTerms({ state }) {
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
                 <input type="checkbox" id="def-autorenew" checked={autoRenew} onChange={e => setAutoRenew(e.target.checked)} style={{ width: 16, height: 16 }} />
                 <label htmlFor="def-autorenew" style={{ fontSize: 13, color: text, cursor: 'pointer' }}>Auto-renew month-to-month after end date</label>
+                <InfoTip tip="If neither side ends the contract by the end date, it automatically keeps going on a month-to-month basis until either party gives 30 days' notice to stop." />
               </div>
               <div style={{ marginBottom: 14 }}>
-                <label style={labelStyle}>Early termination fee (optional)</label>
+                <label style={labelStyle}>
+                  Early termination fee (optional)
+                  <InfoTip tip="A fee either party agrees to pay if they end the contract before the agreed end date. Leave blank if you don't want one." />
+                </label>
                 <input type="number" min="0" placeholder="Leave blank for none" value={earlyFee} onChange={e => setEarlyFee(e.target.value)} style={baseInput} />
               </div>
             </>
           )}
 
           <div style={{ marginBottom: 14 }}>
-            <label style={labelStyle}>Governing law (optional)</label>
+            <label style={labelStyle}>
+              Governing law (optional)
+              <InfoTip tip="Which region's laws apply if there's ever a legal dispute — normally wherever the rental property is located. Most rentals never need it." />
+            </label>
             <input type="text" placeholder="e.g. the State of Texas, USA" value={governingLaw} onChange={e => setGoverningLaw(e.target.value)} style={baseInput} />
           </div>
-          <div style={{ display: 'flex', gap: 8 }}>
+          <div style={{ display: 'flex', gap: 8, marginBottom: 14 }}>
             <div style={{ flex: 1 }}>
-              <label style={{ ...labelStyle, fontSize: 10 }}>Dispute resolution</label>
+              <label style={{ ...labelStyle, fontSize: 10 }}>
+                Dispute resolution
+                <InfoTip tip="How the two of you agree to try to resolve a disagreement. Direct negotiation means just talking it out; mediation brings in a neutral third party; small claims court is the formal legal route." />
+              </label>
               <select value={disputeResolution} onChange={e => setDisputeResolution(e.target.value)} style={{ ...selectStyle, width: '100%', boxSizing: 'border-box' }}>
                 <option value="">Not specified</option>
                 <option value="direct_negotiation">Direct negotiation</option>
@@ -499,7 +532,10 @@ function RentalTerms({ state }) {
               </select>
             </div>
             <div style={{ flex: 1 }}>
-              <label style={{ ...labelStyle, fontSize: 10 }}>Notice delivery</label>
+              <label style={{ ...labelStyle, fontSize: 10 }}>
+                Notice delivery
+                <InfoTip tip="How official notices — like ending the contract — must be delivered to count as valid under this agreement." />
+              </label>
               <select value={noticeMethod} onChange={e => setNoticeMethod(e.target.value)} style={{ ...selectStyle, width: '100%', boxSizing: 'border-box' }}>
                 <option value="">Not specified</option>
                 <option value="email">Email</option>
@@ -507,6 +543,15 @@ function RentalTerms({ state }) {
                 <option value="in_app">In-app message</option>
               </select>
             </div>
+          </div>
+
+          <div style={{ marginTop: 14 }}>
+            <label style={labelStyle}>Additional rules (optional)</label>
+            <textarea
+              rows={3} placeholder="Any other rules or terms you want in writing — e.g. no smoking on the balcony, shared laundry schedule…"
+              value={additionalRules} onChange={e => setAdditionalRules(e.target.value)}
+              style={{ ...baseInput, resize: 'vertical' }}
+            />
           </div>
         </div>
       )}
@@ -607,12 +652,14 @@ export default function PostListing() {
   const [depositReturnDays, setDepositReturnDays] = useState(14)
   const [guests, setGuests]           = useState(null)
   const [utilities, setUtilities]     = useState(null)
+  const [utilitiesResp, setUtilitiesResp] = useState('')
   const [quietHoursOn, setQuietHoursOn] = useState(false)
   const [quietStart, setQuietStart]   = useState('22:00')
   const [quietEnd, setQuietEnd]       = useState('08:00')
   const [governingLaw, setGoverningLaw] = useState('')
   const [disputeResolution, setDisputeResolution] = useState('')
   const [noticeMethod, setNoticeMethod] = useState('')
+  const [additionalRules, setAdditionalRules] = useState('')
 
   const rentalTermsState = {
     marginDays, setMarginDays, termType, setTermType, noticeDays, setNoticeDays,
@@ -621,9 +668,10 @@ export default function PostListing() {
     autoRenew, setAutoRenew, earlyFee, setEarlyFee,
     dueDay, setDueDay, prorate, setProrate, paymentMethod, setPaymentMethod,
     depositAmt, setDepositAmt, depositReturnDays, setDepositReturnDays,
-    guests, setGuests, utilities, setUtilities,
+    guests, setGuests, utilities, setUtilities, utilitiesResp, setUtilitiesResp,
     quietHoursOn, setQuietHoursOn, quietStart, setQuietStart, quietEnd, setQuietEnd,
     governingLaw, setGoverningLaw, disputeResolution, setDisputeResolution, noticeMethod, setNoticeMethod,
+    additionalRules, setAdditionalRules,
   }
 
   const navigate   = useNavigate()
@@ -642,9 +690,10 @@ export default function PostListing() {
     setAutoRenew(false); setEarlyFee('')
     setDueDay(''); setProrate(false); setPaymentMethod('')
     setDepositAmt(''); setDepositReturnDays(14)
-    setGuests(null); setUtilities(null)
+    setGuests(null); setUtilities(null); setUtilitiesResp('')
     setQuietHoursOn(false); setQuietStart('22:00'); setQuietEnd('08:00')
     setGoverningLaw(''); setDisputeResolution(''); setNoticeMethod('')
+    setAdditionalRules('')
     setStep(2)
   }
 
@@ -704,10 +753,12 @@ export default function PostListing() {
         depositAmount: depositAmt ? Number(depositAmt) : null,
         depositReturnDays: Number(depositReturnDays) || 14,
         guestsAllowed: guests, utilitiesIncluded: utilities,
+        utilitiesResponsibility: utilities === false ? (utilitiesResp || null) : null,
         quietHoursEnabled: quietHoursOn, quietHoursStart: quietStart, quietHoursEnd: quietEnd,
         governingLaw: governingLaw.trim() || null,
         disputeResolution: disputeResolution || null,
         noticeDeliveryMethod: noticeMethod || null,
+        additionalRules: additionalRules.trim() || null,
       } : {},
     }
     addListing(listing)         // optimistic + async Supabase insert

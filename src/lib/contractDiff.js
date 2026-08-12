@@ -9,6 +9,10 @@ function fmtTri(v) {
   return v === true ? 'Allowed' : v === false ? 'Not allowed' : 'Not specified'
 }
 
+function fmtIncluded(v) {
+  return v === true ? 'Included' : v === false ? 'Not included' : 'Not specified'
+}
+
 function fmtTerm(v) {
   return v === 'open_ended' ? 'Open-ended' : 'Fixed dates'
 }
@@ -31,6 +35,7 @@ function fmtRent(options) {
 const PAYMENT_METHOD_LABELS = { bank_transfer: 'Bank transfer', cash: 'Cash', app: 'Payment app', other: 'Other' }
 const DISPUTE_RESOLUTION_LABELS = { direct_negotiation: 'Direct negotiation', mediation: 'Mediation', small_claims: 'Small claims court' }
 const NOTICE_METHOD_LABELS = { email: 'Email', written: 'Written', in_app: 'In-app message' }
+const UTIL_RESPONSIBILITY_LABELS = { tenant: 'Tenant pays', landlord: 'Landlord pays', split: 'Split' }
 
 const FIELDS = [
   ['termType',             'Term type',                fmtTerm],
@@ -47,7 +52,8 @@ const FIELDS = [
   ['smokingAllowed',       'Smoking',                    fmtTri],
   ['sublettingAllowed',    'Subletting',                 fmtTri],
   ['guestsAllowed',        'Overnight guests',           fmtTri],
-  ['utilitiesIncluded',    'Utilities included',         fmtTri],
+  ['utilitiesIncluded',    'Utilities included',         fmtIncluded],
+  ['utilitiesResponsibility', 'Utilities paid by',        v => UTIL_RESPONSIBILITY_LABELS[v] || 'Not specified'],
   ['quietHoursEnabled',    'Quiet hours',                 (v, o) => v && o.quietHoursStart && o.quietHoursEnd ? `${o.quietHoursStart}–${o.quietHoursEnd}` : 'Off'],
   ['autoRenew',            'Auto-renew',                v => v ? 'On' : 'Off'],
   ['earlyTerminationFee',  'Early termination fee',      fmtMoney],
@@ -55,6 +61,7 @@ const FIELDS = [
   ['governingLaw',         'Governing law',              v => v || 'Not specified'],
   ['disputeResolution',    'Dispute resolution',         v => DISPUTE_RESOLUTION_LABELS[v] || 'Not specified'],
   ['noticeDeliveryMethod', 'Notice delivery',            v => NOTICE_METHOD_LABELS[v] || 'Not specified'],
+  ['additionalRules',      'Additional terms',           v => v && v.trim() ? v.trim() : 'None'],
 ]
 
 /**
