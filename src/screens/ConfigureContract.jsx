@@ -121,20 +121,26 @@ export default function ConfigureContract() {
 
   const { listing, otherName, otherEmail, otherColor } = location.state || {}
 
+  // Pre-fill from the listing's default rental terms (set by the owner when
+  // posting) — everything below stays fully editable per-contract, this is
+  // only a starting point.
+  const defaults = listing?.defaultOptions || {}
+  const hasDefaults = Object.keys(defaults).length > 0
+
   const [listingContracts, setListingContracts] = useState([])
   const [reuseId, setReuseId] = useState('')
-  const [termType, setTermType] = useState('fixed')
+  const [termType, setTermType] = useState(defaults.termType || 'fixed')
   const [startDate, setStartDate] = useState(TODAY)
   const [endDate, setEndDate] = useState('')
-  const [noticePeriodDays, setNoticePeriodDays] = useState(30)
-  const [petsAllowed, setPetsAllowed] = useState(null)
-  const [smokingAllowed, setSmokingAllowed] = useState(null)
-  const [sublettingAllowed, setSublettingAllowed] = useState(null)
-  const [lateFeeEnabled, setLateFeeEnabled] = useState(false)
-  const [lateFeeGraceDays, setLateFeeGraceDays] = useState(5)
-  const [lateFeeAmount, setLateFeeAmount] = useState('')
-  const [autoRenew, setAutoRenew] = useState(false)
-  const [earlyTerminationFee, setEarlyTerminationFee] = useState('')
+  const [noticePeriodDays, setNoticePeriodDays] = useState(defaults.noticePeriodDays || 30)
+  const [petsAllowed, setPetsAllowed] = useState(defaults.petsAllowed ?? null)
+  const [smokingAllowed, setSmokingAllowed] = useState(defaults.smokingAllowed ?? null)
+  const [sublettingAllowed, setSublettingAllowed] = useState(defaults.sublettingAllowed ?? null)
+  const [lateFeeEnabled, setLateFeeEnabled] = useState(!!defaults.lateFee?.amount)
+  const [lateFeeGraceDays, setLateFeeGraceDays] = useState(defaults.lateFee?.graceDays || 5)
+  const [lateFeeAmount, setLateFeeAmount] = useState(defaults.lateFee?.amount ? String(defaults.lateFee.amount) : '')
+  const [autoRenew, setAutoRenew] = useState(!!defaults.autoRenew)
+  const [earlyTerminationFee, setEarlyTerminationFee] = useState(defaults.earlyTerminationFee ? String(defaults.earlyTerminationFee) : '')
   const [generating, setGenerating] = useState(false)
 
   useEffect(() => { if (user?.email) loadContracts(user.email) }, [loadContracts, user?.email])
@@ -254,9 +260,15 @@ export default function ConfigureContract() {
         <div style={{ fontFamily: serif, fontSize: 22, fontWeight: 300, color: text, marginBottom: 4 }}>
           {listing.title}
         </div>
-        <div style={{ fontSize: 13, color: t2, marginBottom: 20 }}>
+        <div style={{ fontSize: 13, color: t2, marginBottom: hasDefaults ? 8 : 20 }}>
           With {otherName} · before this contract is generated
         </div>
+
+        {hasDefaults && (
+          <div style={{ fontSize: 12, color: t3, marginBottom: 20, lineHeight: 1.5 }}>
+            Pre-filled from this listing's default terms — adjust anything below to match what you and {otherName} actually agree on.
+          </div>
+        )}
 
         {reuseCandidates.length > 0 && (
           <Section title="Start from a previous contract">

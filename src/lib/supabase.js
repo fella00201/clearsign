@@ -39,6 +39,7 @@ function mapRow(row) {
     ownerId:         row.owner_id        ?? null,
     bookingMarginDays: row.booking_margin_days ?? 0,
     blockedDates:    row.blocked_dates    ?? [],
+    defaultOptions:  row.default_options   ?? {},
     reviewCount:     row.review_count    ?? 0,
     avgRating:       parseFloat(row.avg_rating) || 0,
     status:          row.status,
@@ -122,6 +123,8 @@ export async function insertListing(listing) {
       frequency:       listing.frequency        || null,
       repay_by:        listing.repay_by         || null,
       subject:         listing.subject          || null,
+      booking_margin_days: listing.bookingMarginDays || 0,
+      default_options: listing.defaultOptions  ?? {},
       owner_id,
       status: 'active',
     })

@@ -257,6 +257,185 @@ function Field({ fieldKey, meta, value, onChange }) {
   )
 }
 
+// Small "?" icon that reveals a plain-language explanation on hover/tap —
+// same pattern as Configure Contract's InfoTip, for the same concepts.
+function InfoTip({ tip }) {
+  const [open, setOpen] = useState(false)
+  return (
+    <span
+      style={{ position: 'relative', display: 'inline-flex', verticalAlign: 'middle', marginLeft: 6 }}
+      onMouseEnter={() => setOpen(true)}
+      onMouseLeave={() => setOpen(false)}
+    >
+      <button
+        type="button"
+        onClick={() => setOpen(o => !o)}
+        aria-label="More info"
+        style={{
+          width: 15, height: 15, borderRadius: '50%', border: `1px solid ${t3}`, background: 'transparent',
+          color: t3, fontSize: 9.5, fontWeight: 700, cursor: 'pointer', padding: 0,
+          display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1, fontFamily: sans,
+        }}
+      >
+        ?
+      </button>
+      {open && (
+        <div
+          style={{
+            position: 'absolute', bottom: '135%', left: 0,
+            background: text, color: bg2, fontSize: 11.5, lineHeight: 1.45, padding: '8px 10px',
+            borderRadius: 8, width: 210, zIndex: 20, boxShadow: '0 4px 14px rgba(0,0,0,0.22)',
+            fontWeight: 400, textTransform: 'none', letterSpacing: 'normal', fontFamily: sans,
+          }}
+        >
+          {tip}
+        </div>
+      )}
+    </span>
+  )
+}
+
+function TriToggle({ label, value, onChange, info }) {
+  const opts = [['Not specified', null], ['Allowed', true], ['Not allowed', false]]
+  return (
+    <div style={{ marginBottom: 14 }}>
+      <label style={labelStyle}>{label}{info && <InfoTip tip={info} />}</label>
+      <div style={{ display: 'flex', gap: 6 }}>
+        {opts.map(([lbl, val]) => {
+          const on = value === val
+          return (
+            <button
+              key={lbl} type="button" onClick={() => onChange(val)}
+              style={{
+                flex: 1, padding: '9px 6px', borderRadius: 8, fontSize: 12, fontWeight: 600,
+                border: `1px solid ${on ? acc : bdr}`, background: on ? `${acc}18` : bg3,
+                color: on ? acc : t2, cursor: 'pointer', fontFamily: sans,
+              }}
+            >
+              {lbl}
+            </button>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
+// ── Rental default terms (optional, rentals only) ──────────────────────────
+// These pre-fill the Configure Contract screen when a renter and owner sit
+// down to make a contract for this listing — the contract itself stays
+// fully editable, this is just a starting point so common terms don't have
+// to be re-entered from scratch on every contract.
+function RentalTerms({ state }) {
+  const [open, setOpen] = useState(false)
+  const {
+    marginDays, setMarginDays,
+    termType, setTermType,
+    noticeDays, setNoticeDays,
+    pets, setPets, smoking, setSmoking, subletting, setSubletting,
+    lateFeeOn, setLateFeeOn, graceDays, setGraceDays, lateFeeAmt, setLateFeeAmt,
+    autoRenew, setAutoRenew, earlyFee, setEarlyFee,
+  } = state
+
+  return (
+    <div style={{ marginBottom: 14 }}>
+      <button
+        type="button"
+        onClick={() => setOpen(o => !o)}
+        style={{ background: 'none', border: 'none', color: acc, cursor: 'pointer', fontSize: 12, fontWeight: 700, fontFamily: sans, padding: 0, marginBottom: open ? 12 : 0 }}
+      >
+        {open ? 'Hide default rental terms' : 'Set default rental terms →'}
+      </button>
+      {!open && (
+        <div style={{ fontSize: 11.5, color: t3, marginTop: 4, lineHeight: 1.4 }}>
+          Optional — pre-fills these into any contract made for this listing. Still adjustable per-contract.
+        </div>
+      )}
+
+      {open && (
+        <div style={{ background: bg2, border: `1px solid ${bdr}`, borderRadius: 14, padding: 16 }}>
+          <div style={{ marginBottom: 14 }}>
+            <label style={labelStyle}>
+              Margin between bookings (days)
+              <InfoTip tip="Minimum gap enforced between one rental ending and the next starting on this listing — e.g. for cleaning/turnover time." />
+            </label>
+            <input
+              type="number" min="0" value={marginDays}
+              onChange={e => setMarginDays(e.target.value)}
+              style={{ ...baseInput, width: 100 }}
+            />
+          </div>
+
+          <div style={{ marginBottom: 14 }}>
+            <label style={labelStyle}>
+              Preferred term type
+              <InfoTip tip="Fixed dates locks in an exact end date, like a lease. Open-ended keeps the rental going until either side gives notice. Whoever makes the contract can still change this." />
+            </label>
+            <div style={{ display: 'flex', gap: 6 }}>
+              {[['fixed', 'Fixed dates'], ['open_ended', 'Open-ended']].map(([val, lbl]) => {
+                const on = termType === val
+                return (
+                  <button
+                    key={val} type="button" onClick={() => setTermType(val)}
+                    style={{
+                      flex: 1, padding: '10px 8px', borderRadius: 8, fontSize: 13, fontWeight: 600,
+                      border: `1px solid ${on ? acc : bdr}`, background: on ? `${acc}18` : bg3,
+                      color: on ? acc : t2, cursor: 'pointer', fontFamily: sans,
+                    }}
+                  >
+                    {lbl}
+                  </button>
+                )
+              })}
+            </div>
+            {termType === 'open_ended' && (
+              <div style={{ marginTop: 10 }}>
+                <label style={{ ...labelStyle, fontSize: 10 }}>Notice period (days)</label>
+                <input type="number" min="1" value={noticeDays} onChange={e => setNoticeDays(e.target.value)} style={{ ...baseInput, width: 100 }} />
+              </div>
+            )}
+          </div>
+
+          <TriToggle label="Pets" value={pets} onChange={setPets} />
+          <TriToggle label="Smoking" value={smoking} onChange={setSmoking} />
+          <TriToggle label="Subletting" value={subletting} onChange={setSubletting} info="Whether the tenant is allowed to rent out the room/space to someone else during their stay." />
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: lateFeeOn ? 10 : 0 }}>
+            <input type="checkbox" id="def-latefee" checked={lateFeeOn} onChange={e => setLateFeeOn(e.target.checked)} style={{ width: 16, height: 16 }} />
+            <label htmlFor="def-latefee" style={{ fontSize: 13, color: text, cursor: 'pointer' }}>Late payment fee</label>
+            <InfoTip tip="Charges the tenant an extra fee if a payment is late, after the grace period below has passed." />
+          </div>
+          {lateFeeOn && (
+            <div style={{ display: 'flex', gap: 8, marginBottom: 14 }}>
+              <div style={{ flex: 1 }}>
+                <label style={{ ...labelStyle, fontSize: 10 }}>Grace period (days)</label>
+                <input type="number" min="0" value={graceDays} onChange={e => setGraceDays(e.target.value)} style={baseInput} />
+              </div>
+              <div style={{ flex: 1 }}>
+                <label style={{ ...labelStyle, fontSize: 10 }}>Fee amount</label>
+                <input type="number" min="0" placeholder="e.g. 25" value={lateFeeAmt} onChange={e => setLateFeeAmt(e.target.value)} style={baseInput} />
+              </div>
+            </div>
+          )}
+
+          {termType === 'fixed' && (
+            <>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+                <input type="checkbox" id="def-autorenew" checked={autoRenew} onChange={e => setAutoRenew(e.target.checked)} style={{ width: 16, height: 16 }} />
+                <label htmlFor="def-autorenew" style={{ fontSize: 13, color: text, cursor: 'pointer' }}>Auto-renew month-to-month after end date</label>
+              </div>
+              <div>
+                <label style={labelStyle}>Early termination fee (optional)</label>
+                <input type="number" min="0" placeholder="Leave blank for none" value={earlyFee} onChange={e => setEarlyFee(e.target.value)} style={baseInput} />
+              </div>
+            </>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
 function alertMatches(alerts, listing) {
   return (alerts ?? []).some(al => {
     const locMatch = !al.location ||
@@ -331,6 +510,26 @@ export default function PostListing() {
   const [selectedTags, setSelectedTags] = useState([])
   const [error, setError]             = useState('')
 
+  // Default rental terms (rentals only) — pre-fill Configure Contract.
+  const [marginDays, setMarginDays]   = useState(0)
+  const [termType, setTermType]       = useState('fixed')
+  const [noticeDays, setNoticeDays]   = useState(30)
+  const [pets, setPets]               = useState(null)
+  const [smoking, setSmoking]         = useState(null)
+  const [subletting, setSubletting]   = useState(null)
+  const [lateFeeOn, setLateFeeOn]     = useState(false)
+  const [graceDays, setGraceDays]     = useState(5)
+  const [lateFeeAmt, setLateFeeAmt]   = useState('')
+  const [autoRenew, setAutoRenew]     = useState(false)
+  const [earlyFee, setEarlyFee]       = useState('')
+
+  const rentalTermsState = {
+    marginDays, setMarginDays, termType, setTermType, noticeDays, setNoticeDays,
+    pets, setPets, smoking, setSmoking, subletting, setSubletting,
+    lateFeeOn, setLateFeeOn, graceDays, setGraceDays, lateFeeAmt, setLateFeeAmt,
+    autoRenew, setAutoRenew, earlyFee, setEarlyFee,
+  }
+
   const navigate   = useNavigate()
   const user       = useAuth(s => s.user)
   const addListing = useListings(s => s.addListing)
@@ -339,6 +538,12 @@ export default function PostListing() {
     setSubtype(null)
     setSelectedTags([])
     setAnswers({})
+    setMarginDays(0)
+    setTermType('fixed')
+    setNoticeDays(30)
+    setPets(null); setSmoking(null); setSubletting(null)
+    setLateFeeOn(false); setGraceDays(5); setLateFeeAmt('')
+    setAutoRenew(false); setEarlyFee('')
     setStep(2)
   }
 
@@ -366,6 +571,7 @@ export default function PostListing() {
     setError('')
     const fields = LISTING_FIELDS[subtype] || ['title', 'location', 'description']
     const id = Math.random().toString(36).slice(2, 10)
+    const isRental = cat === 'rental'
     const listing = {
       id,
       ...Object.fromEntries(fields.filter(f => f !== 'price').map(f => [f, answers[f]?.trim() || ''])),
@@ -383,6 +589,15 @@ export default function PostListing() {
       status:     'active',
       reviewCount: 0,
       avgRating:   0,
+      bookingMarginDays: isRental ? Math.max(0, Number(marginDays) || 0) : 0,
+      defaultOptions: isRental ? {
+        termType,
+        noticePeriodDays: termType === 'open_ended' ? (Number(noticeDays) || 30) : null,
+        petsAllowed: pets, smokingAllowed: smoking, sublettingAllowed: subletting,
+        autoRenew: termType === 'fixed' ? autoRenew : false,
+        earlyTerminationFee: termType === 'fixed' && earlyFee ? Number(earlyFee) : null,
+        lateFee: lateFeeOn && lateFeeAmt ? { graceDays: Number(graceDays), amount: Number(lateFeeAmt) } : null,
+      } : {},
     }
     addListing(listing)         // optimistic + async Supabase insert
     fireAlerts(listing)         // async, fire-and-forget notification fan-out
@@ -489,6 +704,8 @@ export default function PostListing() {
             ? <PriceField key="price" answers={answers} setAnswer={setAnswer} subtype={subtype} />
             : <Field key={f} fieldKey={f} meta={FIELD_META[f] || { label: f, ph: '' }} value={answers[f] || ''} onChange={setAnswer} />
         )}
+
+        {cat === 'rental' && <RentalTerms state={rentalTermsState} />}
 
         {tagCfg && (
           <>
