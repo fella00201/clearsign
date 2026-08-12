@@ -335,6 +335,11 @@ function RentalTerms({ state }) {
     pets, setPets, smoking, setSmoking, subletting, setSubletting,
     lateFeeOn, setLateFeeOn, graceDays, setGraceDays, lateFeeAmt, setLateFeeAmt,
     autoRenew, setAutoRenew, earlyFee, setEarlyFee,
+    dueDay, setDueDay, prorate, setProrate, paymentMethod, setPaymentMethod,
+    depositAmt, setDepositAmt, depositReturnDays, setDepositReturnDays,
+    guests, setGuests, utilities, setUtilities,
+    quietHoursOn, setQuietHoursOn, quietStart, setQuietStart, quietEnd, setQuietEnd,
+    governingLaw, setGoverningLaw, disputeResolution, setDisputeResolution, noticeMethod, setNoticeMethod,
   } = state
 
   return (
@@ -396,9 +401,44 @@ function RentalTerms({ state }) {
             )}
           </div>
 
+          <div style={{ display: 'flex', gap: 8, marginBottom: 14 }}>
+            <div style={{ flex: 1 }}>
+              <label style={{ ...labelStyle, fontSize: 10 }}>Rent due day (optional)</label>
+              <input type="number" min="1" max="31" placeholder="e.g. 1" value={dueDay} onChange={e => setDueDay(e.target.value)} style={baseInput} />
+            </div>
+            <div style={{ flex: 1 }}>
+              <label style={{ ...labelStyle, fontSize: 10 }}>Payment method</label>
+              <select value={paymentMethod} onChange={e => setPaymentMethod(e.target.value)} style={{ ...selectStyle, width: '100%', boxSizing: 'border-box' }}>
+                <option value="">Not specified</option>
+                <option value="bank_transfer">Bank transfer</option>
+                <option value="cash">Cash</option>
+                <option value="app">Payment app</option>
+                <option value="other">Other</option>
+              </select>
+            </div>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
+            <input type="checkbox" id="def-prorate" checked={prorate} onChange={e => setProrate(e.target.checked)} style={{ width: 16, height: 16 }} />
+            <label htmlFor="def-prorate" style={{ fontSize: 13, color: text, cursor: 'pointer' }}>Prorate first period if start date is mid-period</label>
+          </div>
+
           <TriToggle label="Pets" value={pets} onChange={setPets} />
           <TriToggle label="Smoking" value={smoking} onChange={setSmoking} />
           <TriToggle label="Subletting" value={subletting} onChange={setSubletting} info="Whether the tenant is allowed to rent out the room/space to someone else during their stay." />
+          <TriToggle label="Overnight guests" value={guests} onChange={setGuests} />
+          <TriToggle label="Utilities included" value={utilities} onChange={setUtilities} info="Whether utilities (electricity, water, internet, etc.) are included in the rent or billed separately." />
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: quietHoursOn ? 10 : 14 }}>
+            <input type="checkbox" id="def-quiethours" checked={quietHoursOn} onChange={e => setQuietHoursOn(e.target.checked)} style={{ width: 16, height: 16 }} />
+            <label htmlFor="def-quiethours" style={{ fontSize: 13, color: text, cursor: 'pointer' }}>Quiet hours</label>
+          </div>
+          {quietHoursOn && (
+            <div style={{ display: 'flex', gap: 8, marginBottom: 14, alignItems: 'center' }}>
+              <input type="time" value={quietStart} onChange={e => setQuietStart(e.target.value)} style={{ ...baseInput, flex: 1, colorScheme: 'light' }} />
+              <span style={{ color: t3, fontSize: 12 }}>to</span>
+              <input type="time" value={quietEnd} onChange={e => setQuietEnd(e.target.value)} style={{ ...baseInput, flex: 1, colorScheme: 'light' }} />
+            </div>
+          )}
 
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: lateFeeOn ? 10 : 0 }}>
             <input type="checkbox" id="def-latefee" checked={lateFeeOn} onChange={e => setLateFeeOn(e.target.checked)} style={{ width: 16, height: 16 }} />
@@ -418,18 +458,56 @@ function RentalTerms({ state }) {
             </div>
           )}
 
+          <div style={{ display: 'flex', gap: 8, marginBottom: 14 }}>
+            <div style={{ flex: 1 }}>
+              <label style={{ ...labelStyle, fontSize: 10 }}>Security deposit (optional)</label>
+              <input type="number" min="0" placeholder="Leave blank for none" value={depositAmt} onChange={e => setDepositAmt(e.target.value)} style={baseInput} />
+            </div>
+            {depositAmt && (
+              <div style={{ flex: 1 }}>
+                <label style={{ ...labelStyle, fontSize: 10 }}>Returned within (days)</label>
+                <input type="number" min="0" value={depositReturnDays} onChange={e => setDepositReturnDays(e.target.value)} style={baseInput} />
+              </div>
+            )}
+          </div>
+
           {termType === 'fixed' && (
             <>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
                 <input type="checkbox" id="def-autorenew" checked={autoRenew} onChange={e => setAutoRenew(e.target.checked)} style={{ width: 16, height: 16 }} />
                 <label htmlFor="def-autorenew" style={{ fontSize: 13, color: text, cursor: 'pointer' }}>Auto-renew month-to-month after end date</label>
               </div>
-              <div>
+              <div style={{ marginBottom: 14 }}>
                 <label style={labelStyle}>Early termination fee (optional)</label>
                 <input type="number" min="0" placeholder="Leave blank for none" value={earlyFee} onChange={e => setEarlyFee(e.target.value)} style={baseInput} />
               </div>
             </>
           )}
+
+          <div style={{ marginBottom: 14 }}>
+            <label style={labelStyle}>Governing law (optional)</label>
+            <input type="text" placeholder="e.g. the State of Texas, USA" value={governingLaw} onChange={e => setGoverningLaw(e.target.value)} style={baseInput} />
+          </div>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <div style={{ flex: 1 }}>
+              <label style={{ ...labelStyle, fontSize: 10 }}>Dispute resolution</label>
+              <select value={disputeResolution} onChange={e => setDisputeResolution(e.target.value)} style={{ ...selectStyle, width: '100%', boxSizing: 'border-box' }}>
+                <option value="">Not specified</option>
+                <option value="direct_negotiation">Direct negotiation</option>
+                <option value="mediation">Mediation</option>
+                <option value="small_claims">Small claims court</option>
+              </select>
+            </div>
+            <div style={{ flex: 1 }}>
+              <label style={{ ...labelStyle, fontSize: 10 }}>Notice delivery</label>
+              <select value={noticeMethod} onChange={e => setNoticeMethod(e.target.value)} style={{ ...selectStyle, width: '100%', boxSizing: 'border-box' }}>
+                <option value="">Not specified</option>
+                <option value="email">Email</option>
+                <option value="written">Written</option>
+                <option value="in_app">In-app message</option>
+              </select>
+            </div>
+          </div>
         </div>
       )}
     </div>
@@ -522,12 +600,30 @@ export default function PostListing() {
   const [lateFeeAmt, setLateFeeAmt]   = useState('')
   const [autoRenew, setAutoRenew]     = useState(false)
   const [earlyFee, setEarlyFee]       = useState('')
+  const [dueDay, setDueDay]           = useState('')
+  const [prorate, setProrate]         = useState(false)
+  const [paymentMethod, setPaymentMethod] = useState('')
+  const [depositAmt, setDepositAmt]   = useState('')
+  const [depositReturnDays, setDepositReturnDays] = useState(14)
+  const [guests, setGuests]           = useState(null)
+  const [utilities, setUtilities]     = useState(null)
+  const [quietHoursOn, setQuietHoursOn] = useState(false)
+  const [quietStart, setQuietStart]   = useState('22:00')
+  const [quietEnd, setQuietEnd]       = useState('08:00')
+  const [governingLaw, setGoverningLaw] = useState('')
+  const [disputeResolution, setDisputeResolution] = useState('')
+  const [noticeMethod, setNoticeMethod] = useState('')
 
   const rentalTermsState = {
     marginDays, setMarginDays, termType, setTermType, noticeDays, setNoticeDays,
     pets, setPets, smoking, setSmoking, subletting, setSubletting,
     lateFeeOn, setLateFeeOn, graceDays, setGraceDays, lateFeeAmt, setLateFeeAmt,
     autoRenew, setAutoRenew, earlyFee, setEarlyFee,
+    dueDay, setDueDay, prorate, setProrate, paymentMethod, setPaymentMethod,
+    depositAmt, setDepositAmt, depositReturnDays, setDepositReturnDays,
+    guests, setGuests, utilities, setUtilities,
+    quietHoursOn, setQuietHoursOn, quietStart, setQuietStart, quietEnd, setQuietEnd,
+    governingLaw, setGoverningLaw, disputeResolution, setDisputeResolution, noticeMethod, setNoticeMethod,
   }
 
   const navigate   = useNavigate()
@@ -544,6 +640,11 @@ export default function PostListing() {
     setPets(null); setSmoking(null); setSubletting(null)
     setLateFeeOn(false); setGraceDays(5); setLateFeeAmt('')
     setAutoRenew(false); setEarlyFee('')
+    setDueDay(''); setProrate(false); setPaymentMethod('')
+    setDepositAmt(''); setDepositReturnDays(14)
+    setGuests(null); setUtilities(null)
+    setQuietHoursOn(false); setQuietStart('22:00'); setQuietEnd('08:00')
+    setGoverningLaw(''); setDisputeResolution(''); setNoticeMethod('')
     setStep(2)
   }
 
@@ -597,6 +698,16 @@ export default function PostListing() {
         autoRenew: termType === 'fixed' ? autoRenew : false,
         earlyTerminationFee: termType === 'fixed' && earlyFee ? Number(earlyFee) : null,
         lateFee: lateFeeOn && lateFeeAmt ? { graceDays: Number(graceDays), amount: Number(lateFeeAmt) } : null,
+        dueDay: dueDay ? Number(dueDay) : null,
+        prorateFirstPeriod: prorate,
+        paymentMethod: paymentMethod || null,
+        depositAmount: depositAmt ? Number(depositAmt) : null,
+        depositReturnDays: Number(depositReturnDays) || 14,
+        guestsAllowed: guests, utilitiesIncluded: utilities,
+        quietHoursEnabled: quietHoursOn, quietHoursStart: quietStart, quietHoursEnd: quietEnd,
+        governingLaw: governingLaw.trim() || null,
+        disputeResolution: disputeResolution || null,
+        noticeDeliveryMethod: noticeMethod || null,
       } : {},
     }
     addListing(listing)         // optimistic + async Supabase insert

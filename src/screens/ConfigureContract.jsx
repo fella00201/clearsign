@@ -6,6 +6,7 @@ import { generateContract } from '../lib/contracts'
 import { fetchContractsByListing, fetchListingById } from '../lib/supabase'
 import { checkAvailability, addDays, daysBetween } from '../lib/availability'
 import { diffOptions } from '../lib/contractDiff'
+import { CSYM } from '../data/contractTemplates'
 import { bg, bg2, bg3, bdr, text, t2, t3, acc, red, redbg, green, sans, serif } from '../theme'
 
 const UUID_RE = /^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/i
@@ -181,6 +182,22 @@ export default function ConfigureContract() {
   const [lateFeeAmount, setLateFeeAmount] = useState(seed.lateFee?.amount ? String(seed.lateFee.amount) : '')
   const [autoRenew, setAutoRenew] = useState(!!seed.autoRenew)
   const [earlyTerminationFee, setEarlyTerminationFee] = useState(seed.earlyTerminationFee ? String(seed.earlyTerminationFee) : '')
+  const [rentAmount, setRentAmount] = useState(seed.rentAmount ? String(seed.rentAmount) : (listingFromState?.price || ''))
+  const [rentCurrency, setRentCurrency] = useState(seed.rentCurrency || listingFromState?.price_currency || 'USD')
+  const [rentPeriod, setRentPeriod] = useState(seed.rentPeriod || listingFromState?.price_period || 'monthly')
+  const [dueDay, setDueDay] = useState(seed.dueDay || '')
+  const [prorateFirstPeriod, setProrateFirstPeriod] = useState(!!seed.prorateFirstPeriod)
+  const [paymentMethod, setPaymentMethod] = useState(seed.paymentMethod || '')
+  const [depositAmount, setDepositAmount] = useState(seed.depositAmount ? String(seed.depositAmount) : '')
+  const [depositReturnDays, setDepositReturnDays] = useState(seed.depositReturnDays || 14)
+  const [guestsAllowed, setGuestsAllowed] = useState(seed.guestsAllowed ?? null)
+  const [utilitiesIncluded, setUtilitiesIncluded] = useState(seed.utilitiesIncluded ?? null)
+  const [quietHoursEnabled, setQuietHoursEnabled] = useState(!!seed.quietHoursEnabled)
+  const [quietHoursStart, setQuietHoursStart] = useState(seed.quietHoursStart || '22:00')
+  const [quietHoursEnd, setQuietHoursEnd] = useState(seed.quietHoursEnd || '08:00')
+  const [governingLaw, setGoverningLaw] = useState(seed.governingLaw || '')
+  const [disputeResolution, setDisputeResolution] = useState(seed.disputeResolution || '')
+  const [noticeDeliveryMethod, setNoticeDeliveryMethod] = useState(seed.noticeDeliveryMethod || '')
   const [generating, setGenerating] = useState(false)
 
   useEffect(() => { if (user?.email) loadContracts(user.email) }, [loadContracts, user?.email])
@@ -237,6 +254,22 @@ export default function ConfigureContract() {
     } else {
       setLateFeeEnabled(false)
     }
+    if (o.rentAmount) setRentAmount(String(o.rentAmount))
+    setRentCurrency(o.rentCurrency || rentCurrency)
+    setRentPeriod(o.rentPeriod || rentPeriod)
+    setDueDay(o.dueDay || '')
+    setProrateFirstPeriod(!!o.prorateFirstPeriod)
+    setPaymentMethod(o.paymentMethod || '')
+    setDepositAmount(o.depositAmount ? String(o.depositAmount) : '')
+    setDepositReturnDays(o.depositReturnDays || 14)
+    setGuestsAllowed(o.guestsAllowed ?? null)
+    setUtilitiesIncluded(o.utilitiesIncluded ?? null)
+    setQuietHoursEnabled(!!o.quietHoursEnabled)
+    setQuietHoursStart(o.quietHoursStart || '22:00')
+    setQuietHoursEnd(o.quietHoursEnd || '08:00')
+    setGoverningLaw(o.governingLaw || '')
+    setDisputeResolution(o.disputeResolution || '')
+    setNoticeDeliveryMethod(o.noticeDeliveryMethod || '')
   }
 
   const candidateEnd = termType === 'fixed' ? endDate : null
@@ -261,6 +294,18 @@ export default function ConfigureContract() {
     autoRenew: termType === 'fixed' ? autoRenew : false,
     earlyTerminationFee: termType === 'fixed' && earlyTerminationFee ? Number(earlyTerminationFee) : null,
     lateFee: lateFeeEnabled && lateFeeAmount ? { graceDays: Number(lateFeeGraceDays), amount: Number(lateFeeAmount) } : null,
+    rentAmount: rentAmount ? Number(rentAmount) : null,
+    rentCurrency, rentPeriod,
+    dueDay: dueDay ? Number(dueDay) : null,
+    prorateFirstPeriod,
+    paymentMethod: paymentMethod || null,
+    depositAmount: depositAmount ? Number(depositAmount) : null,
+    depositReturnDays: Number(depositReturnDays) || 14,
+    guestsAllowed, utilitiesIncluded,
+    quietHoursEnabled, quietHoursStart, quietHoursEnd,
+    governingLaw: governingLaw.trim() || null,
+    disputeResolution: disputeResolution || null,
+    noticeDeliveryMethod: noticeDeliveryMethod || null,
   }
   const liveDiff = isEditing ? diffOptions(editingContract.options, liveOptions) : []
 
@@ -356,6 +401,60 @@ export default function ConfigureContract() {
           </Section>
         )}
 
+        <Section title="Rent & payment">
+          <div style={{ marginBottom: 14 }}>
+            <label style={labelStyle}>Rent</label>
+            <div style={{ display: 'flex', gap: 6 }}>
+              <select value={rentCurrency} onChange={e => setRentCurrency(e.target.value)} style={{ ...inputCss, flexShrink: 0, width: 90, cursor: 'pointer', appearance: 'none' }}>
+                {Object.keys(CSYM).map(code => <option key={code} value={code}>{code} {CSYM[code]}</option>)}
+              </select>
+              <input type="number" min="0" placeholder="0" value={rentAmount} onChange={e => setRentAmount(e.target.value)} style={{ ...inputCss, flex: 1 }} />
+              <select value={rentPeriod} onChange={e => setRentPeriod(e.target.value)} style={{ ...inputCss, flexShrink: 0, width: 120, cursor: 'pointer', appearance: 'none' }}>
+                {[['hourly', 'Per hour'], ['daily', 'Per day'], ['weekly', 'Per week'], ['monthly', 'Per month'], ['one-time', 'One-time']].map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+              </select>
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', gap: 8 }}>
+            <div style={{ flex: 1 }}>
+              <Field label="Due day (optional)" hint="Day of the period rent is due, e.g. 1.">
+                <input type="number" min="1" max="31" placeholder="e.g. 1" value={dueDay} onChange={e => setDueDay(e.target.value)} style={inputCss} />
+              </Field>
+            </div>
+            <div style={{ flex: 1 }}>
+              <Field label="Payment method">
+                <select value={paymentMethod} onChange={e => setPaymentMethod(e.target.value)} style={{ ...inputCss, cursor: 'pointer', appearance: 'none' }}>
+                  <option value="">Not specified</option>
+                  <option value="bank_transfer">Bank transfer</option>
+                  <option value="cash">Cash</option>
+                  <option value="app">Payment app</option>
+                  <option value="other">Other</option>
+                </select>
+              </Field>
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
+            <input type="checkbox" id="prorate" checked={prorateFirstPeriod} onChange={e => setProrateFirstPeriod(e.target.checked)} style={{ width: 16, height: 16 }} />
+            <label htmlFor="prorate" style={{ fontSize: 13, color: text, cursor: 'pointer' }}>Prorate first period if start date is mid-period</label>
+          </div>
+
+          <div style={{ display: 'flex', gap: 8 }}>
+            <div style={{ flex: 1 }}>
+              <Field label="Security deposit (optional)">
+                <input type="number" min="0" placeholder="Leave blank for none" value={depositAmount} onChange={e => setDepositAmount(e.target.value)} style={inputCss} />
+              </Field>
+            </div>
+            {depositAmount && (
+              <div style={{ flex: 1 }}>
+                <Field label="Returned within (days)">
+                  <input type="number" min="0" value={depositReturnDays} onChange={e => setDepositReturnDays(e.target.value)} style={inputCss} />
+                </Field>
+              </div>
+            )}
+          </div>
+        </Section>
+
         <Section title="Term" info="Fixed dates lock in an exact end date, like a lease. Open-ended keeps the rental going indefinitely until either side gives the required notice to end it.">
           <div style={{ display: 'flex', gap: 6, marginBottom: 14 }}>
             {[['fixed', 'Fixed dates'], ['open_ended', 'Open-ended']].map(([val, lbl]) => {
@@ -402,6 +501,20 @@ export default function ConfigureContract() {
           <TriToggle label="Pets" value={petsAllowed} onChange={setPetsAllowed} />
           <TriToggle label="Smoking" value={smokingAllowed} onChange={setSmokingAllowed} />
           <TriToggle label="Subletting" value={sublettingAllowed} onChange={setSublettingAllowed} info="Whether the tenant is allowed to rent out the room/space to someone else during their stay." />
+          <TriToggle label="Overnight guests" value={guestsAllowed} onChange={setGuestsAllowed} />
+          <TriToggle label="Utilities included" value={utilitiesIncluded} onChange={setUtilitiesIncluded} info="Whether utilities (electricity, water, internet, etc.) are included in the rent or billed separately." />
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: quietHoursEnabled ? 10 : 14 }}>
+            <input type="checkbox" id="quiethours" checked={quietHoursEnabled} onChange={e => setQuietHoursEnabled(e.target.checked)} style={{ width: 16, height: 16 }} />
+            <label htmlFor="quiethours" style={{ fontSize: 13, color: text, cursor: 'pointer' }}>Quiet hours</label>
+          </div>
+          {quietHoursEnabled && (
+            <div style={{ display: 'flex', gap: 8, marginBottom: 14, alignItems: 'center' }}>
+              <input type="time" value={quietHoursStart} onChange={e => setQuietHoursStart(e.target.value)} style={{ ...inputCss, flex: 1, colorScheme: 'light' }} />
+              <span style={{ color: t3, fontSize: 12 }}>to</span>
+              <input type="time" value={quietHoursEnd} onChange={e => setQuietHoursEnd(e.target.value)} style={{ ...inputCss, flex: 1, colorScheme: 'light' }} />
+            </div>
+          )}
 
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: lateFeeEnabled ? 10 : 0 }}>
             <input type="checkbox" id="latefee" checked={lateFeeEnabled} onChange={e => setLateFeeEnabled(e.target.checked)} style={{ width: 16, height: 16 }} />
@@ -436,6 +549,29 @@ export default function ConfigureContract() {
               </Field>
             </>
           )}
+        </Section>
+
+        <Section title="Legal (optional)">
+          <Field label="Governing law" hint="e.g. the State of Texas, USA — leave blank to omit.">
+            <input type="text" placeholder="Leave blank to omit" value={governingLaw} onChange={e => setGoverningLaw(e.target.value)} style={inputCss} />
+          </Field>
+          <Field label="Dispute resolution">
+            <select value={disputeResolution} onChange={e => setDisputeResolution(e.target.value)} style={{ ...inputCss, cursor: 'pointer', appearance: 'none' }}>
+              <option value="">Not specified</option>
+              <option value="direct_negotiation">Direct negotiation</option>
+              <option value="mediation">Mediation</option>
+              <option value="small_claims">Small claims court</option>
+            </select>
+          </Field>
+          <div style={{ marginBottom: 0 }}>
+            <label style={labelStyle}>Notice delivery method</label>
+            <select value={noticeDeliveryMethod} onChange={e => setNoticeDeliveryMethod(e.target.value)} style={{ ...inputCss, cursor: 'pointer', appearance: 'none' }}>
+              <option value="">Not specified</option>
+              <option value="email">Email</option>
+              <option value="written">Written (in person or by mail)</option>
+              <option value="in_app">In-app message</option>
+            </select>
+          </div>
         </Section>
 
         {isEditing && liveDiff.length > 0 && (

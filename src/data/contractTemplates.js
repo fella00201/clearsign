@@ -11,7 +11,7 @@
 
 export const TEMPLATE_VERSION = 1
 
-const CSYM = { USD:'$',EUR:'€',GBP:'£',SEK:'kr',NOK:'kr',DKK:'kr',CHF:'Fr',CAD:'CA$',AUD:'A$',NZD:'NZ$',JPY:'¥',CNY:'¥',INR:'₹',BRL:'R$',MXN:'MX$',SGD:'S$',HKD:'HK$',ZAR:'R' }
+export const CSYM = { USD:'$',EUR:'€',GBP:'£',SEK:'kr',NOK:'kr',DKK:'kr',CHF:'Fr',CAD:'CA$',AUD:'A$',NZD:'NZ$',JPY:'¥',CNY:'¥',INR:'₹',BRL:'R$',MXN:'MX$',SGD:'S$',HKD:'HK$',ZAR:'R' }
 
 function fmtPrice(listing) {
   if (listing.price) {
@@ -38,6 +38,66 @@ function fmtDate(iso) {
   return isNaN(d) ? iso : d.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
 }
 
+function ordinal(n) {
+  n = Number(n)
+  const suffixes = ['th', 'st', 'nd', 'rd']
+  const v = n % 100
+  return n + (suffixes[(v - 20) % 10] || suffixes[v] || suffixes[0])
+}
+
+const PAYMENT_LABELS = {
+  bank_transfer: 'bank transfer',
+  cash: 'cash',
+  app: 'an in-app or third-party payment app',
+  other: 'a method agreed between the parties',
+}
+
+const DISPUTE_LABELS = {
+  direct_negotiation: 'Any dispute arising under this agreement will first be addressed through direct, good-faith negotiation between the parties.',
+  mediation: 'Any dispute arising under this agreement that cannot be resolved directly will be submitted to mediation before either party pursues other remedies.',
+  small_claims: 'Any dispute arising under this agreement that cannot be resolved directly may be brought in small claims court.',
+}
+
+const NOTICE_LABELS = {
+  email: 'email to the address on file',
+  written: 'written notice delivered in person or by mail',
+  in_app: 'a message through ClearSign',
+}
+
+// Rent amount — pulled from the listing's advertised price by default, but
+// overridden by a per-contract rentAmount when the parties negotiated a
+// different figure via Configure Contract.
+function rentAmountStr(options, listing) {
+  if (options?.rentAmount) {
+    const period = options.rentPeriod && options.rentPeriod !== 'one-time'
+      ? `/${options.rentPeriod.replace('per ', '')}` : ''
+    return `${CSYM[options.rentCurrency] || options.rentCurrency || '$'}${options.rentAmount}${period}`
+  }
+  return fmtPrice(listing)
+}
+
+// Only meaningful for recurring rentals (room/parking/storage) — venue/gear
+// keep their own per-booking suffix wording and never call this.
+function dueDaySuffix(options) {
+  return options?.dueDay
+    ? `, due on the ${ordinal(options.dueDay)} of each period`
+    : ', due in advance for each period'
+}
+
+// Deposit — a real per-contract amount when set, falling back to the old
+// tag-based "some deposit is required" wording, then to "none required".
+function depositClause(options, listing, { before, after, returnDefault }) {
+  if (options?.depositAmount) {
+    const code = options.depositCurrency || options.rentCurrency
+    const cur = CSYM[code] || code || '$'
+    return `A security deposit of ${cur}${options.depositAmount} is due ${before} and will be returned within ${options.depositReturnDays || returnDefault} days of ${after}, less any deduction for damage beyond normal wear and tear.`
+  }
+  if (hasTag(listing, 'Deposit required')) {
+    return `A security deposit is due ${before} and will be returned within ${returnDefault} days of ${after}, less any deduction for damage beyond normal wear and tear.`
+  }
+  return 'No security deposit is required unless separately agreed in writing.'
+}
+
 // Deterministic term/options clauses for the 5 rental deal types — built
 // from the structured fields set on the ConfigureContract screen, never by
 // AI. `options` is undefined for contracts created outside that screen
@@ -59,14 +119,38 @@ function termClauses(options, fallbackLine) {
     lines.push(`This agreement begins on ${fmtDate(options.startDate)} and continues until either party ends it by giving at least ${options.noticePeriodDays || 30} days’ written notice.`)
   }
 
+  if (options.prorateFirstPeriod) {
+    lines.push('If the start date falls partway through a rental period, the amount due for that first period is prorated based on the number of days remaining in the period.')
+  }
+  if (options.paymentMethod && PAYMENT_LABELS[options.paymentMethod]) {
+    lines.push(`Payment is made via ${PAYMENT_LABELS[options.paymentMethod]}.`)
+  }
+
   if (options.petsAllowed === true)  lines.push('Pets are permitted, subject to reasonable house rules.')
   if (options.petsAllowed === false) lines.push('Pets are not permitted.')
   if (options.smokingAllowed === true)  lines.push('Smoking is permitted in designated areas only.')
   if (options.smokingAllowed === false) lines.push('Smoking is not permitted on the property.')
   if (options.sublettingAllowed === true)  lines.push('Subletting is permitted with the Landlord’s/Owner’s prior written consent.')
   if (options.sublettingAllowed === false) lines.push('Subletting is not permitted.')
+  if (options.guestsAllowed === true)  lines.push('Overnight guests are permitted, subject to reasonable house rules.')
+  if (options.guestsAllowed === false) lines.push('Overnight guests are not permitted without the other party’s prior consent.')
+  if (options.utilitiesIncluded === true)  lines.push('Utilities are included in the rent/fee stated above.')
+  if (options.utilitiesIncluded === false) lines.push('Utilities are billed separately and are not included in the rent/fee stated above.')
+  if (options.quietHoursEnabled && options.quietHoursStart && options.quietHoursEnd) {
+    lines.push(`Quiet hours apply from ${options.quietHoursStart} to ${options.quietHoursEnd}.`)
+  }
   if (options.lateFee?.amount) {
     lines.push(`Payment not received within ${options.lateFee.graceDays || 0} days of the due date incurs a late fee of ${options.lateFee.amount}.`)
+  }
+
+  if (options.governingLaw) {
+    lines.push(`This agreement is governed by the laws of ${options.governingLaw}.`)
+  }
+  if (options.disputeResolution && DISPUTE_LABELS[options.disputeResolution]) {
+    lines.push(DISPUTE_LABELS[options.disputeResolution])
+  }
+  if (options.noticeDeliveryMethod && NOTICE_LABELS[options.noticeDeliveryMethod]) {
+    lines.push(`Formal notices under this agreement must be given via ${NOTICE_LABELS[options.noticeDeliveryMethod]}.`)
   }
 
   return lines
@@ -89,11 +173,9 @@ const TEMPLATES = {
   room: (ctx) => assemble({
     ...ctx, titleLabel: 'Room Rental Agreement', providerRole: 'Landlord', seekerRole: 'Tenant',
     clauses: [
-      `Rent: ${fmtPrice(ctx.listing)}, due in advance for each period.`,
+      `Rent: ${rentAmountStr(ctx.options, ctx.listing)}${dueDaySuffix(ctx.options)}.`,
       `Move-in date: ${fmtField(ctx.listing.available_from)}.`,
-      hasTag(ctx.listing, 'Deposit required')
-        ? 'A security deposit equal to one period’s rent is due before move-in and will be returned within 14 days of move-out, less any deduction for damage beyond normal wear and tear.'
-        : 'No security deposit is required unless separately agreed in writing.',
+      depositClause(ctx.options, ctx.listing, { before: 'before move-in', after: 'move-out', returnDefault: 14 }),
       ...termClauses(ctx.options, 'Either party may end this agreement by giving at least 30 days’ written notice, or as otherwise agreed.'),
       'The Tenant agrees to keep the room in reasonable condition and report damage promptly. The Landlord agrees to keep the property safe and habitable.',
       'Utilities, bills, and shared-space rules are as described in the listing unless otherwise agreed in writing.',
@@ -103,8 +185,9 @@ const TEMPLATES = {
   parking: (ctx) => assemble({
     ...ctx, titleLabel: 'Parking Space Rental Agreement', providerRole: 'Owner', seekerRole: 'Renter',
     clauses: [
-      `Fee: ${fmtPrice(ctx.listing)}, due in advance for each period.`,
+      `Fee: ${rentAmountStr(ctx.options, ctx.listing)}${dueDaySuffix(ctx.options)}.`,
       `Available from: ${fmtField(ctx.listing.available_from)}.`,
+      depositClause(ctx.options, ctx.listing, { before: 'before the start date', after: 'the end date', returnDefault: 14 }),
       'The Renter may park only the vehicle(s) agreed between the parties and must not sublet the space.',
       ...termClauses(ctx.options, 'Either party may end this agreement with at least 7 days’ written notice.'),
       'The Owner is not responsible for damage, theft, or loss affecting the Renter’s vehicle while parked.',
@@ -114,7 +197,8 @@ const TEMPLATES = {
   storage: (ctx) => assemble({
     ...ctx, titleLabel: 'Storage Space Rental Agreement', providerRole: 'Owner', seekerRole: 'Renter',
     clauses: [
-      `Fee: ${fmtPrice(ctx.listing)}, due in advance for each period.`,
+      `Fee: ${rentAmountStr(ctx.options, ctx.listing)}${dueDaySuffix(ctx.options)}.`,
+      depositClause(ctx.options, ctx.listing, { before: 'before the start date', after: 'the end date', returnDefault: 14 }),
       'The Renter may store only lawful, non-hazardous, non-perishable items and must not exceed the space’s stated capacity.',
       ...termClauses(ctx.options, 'Either party may end this agreement with at least 14 days’ written notice; the Renter must remove all belongings by the end date.'),
       'The Owner is not responsible for loss or damage to stored items unless caused by the Owner’s negligence.',
@@ -124,10 +208,8 @@ const TEMPLATES = {
   venue: (ctx) => assemble({
     ...ctx, titleLabel: 'Venue Booking Agreement', providerRole: 'Host', seekerRole: 'Renter',
     clauses: [
-      `Fee: ${fmtPrice(ctx.listing)} for the booked date/duration.`,
-      hasTag(ctx.listing, 'Deposit required')
-        ? 'A refundable damage deposit is due before the event and will be returned within 7 days, less any deduction for damage or excess cleaning.'
-        : 'No damage deposit is required unless separately agreed in writing.',
+      `Fee: ${rentAmountStr(ctx.options, ctx.listing)} for the booked date/duration.`,
+      depositClause(ctx.options, ctx.listing, { before: 'before the event', after: 'the event', returnDefault: 7 }),
       'Cancellations made at least 7 days before the booking are eligible for a full refund of any amount paid; later cancellations are non-refundable unless the Host agrees otherwise.',
       ...termClauses(ctx.options, 'The booking covers the date/duration stated above only; any extension must be agreed separately.'),
       'The Renter is responsible for the conduct of their guests and for leaving the venue in the condition it was received.',
@@ -137,10 +219,8 @@ const TEMPLATES = {
   gear: (ctx) => assemble({
     ...ctx, titleLabel: 'Equipment Rental Agreement', providerRole: 'Owner', seekerRole: 'Renter',
     clauses: [
-      `Fee: ${fmtPrice(ctx.listing)} for the rental period.`,
-      hasTag(ctx.listing, 'Deposit required')
-        ? 'A refundable deposit is due at pickup and will be returned on return of the equipment in its original condition.'
-        : 'No deposit is required unless separately agreed in writing.',
+      `Fee: ${rentAmountStr(ctx.options, ctx.listing)} for the rental period.`,
+      depositClause(ctx.options, ctx.listing, { before: 'at pickup', after: 'return of the equipment', returnDefault: 7 }),
       'The Renter is responsible for loss, theft, or damage to the equipment while in their possession, normal wear and tear excepted.',
       ...termClauses(ctx.options, 'The equipment must be returned by the agreed return date and time; late returns may incur an additional daily fee.'),
     ],
