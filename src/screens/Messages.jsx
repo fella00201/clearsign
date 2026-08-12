@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../store/useAuth'
-import { fetchThreads } from '../lib/supabase'
-import { bg, bg3, bdr, text, t2, t3, acc, sans, serif } from '../theme'
+import { fetchThreadsWithUnread } from '../lib/supabase'
+import { bg, bg3, bdr, text, t2, t3, acc, accbg, red, sans, serif } from '../theme'
 
 function initials(name) {
   return name.split(' ').map(w => w[0] || '').slice(0, 2).join('').toUpperCase() || '?'
@@ -40,16 +40,24 @@ export default function Messages() {
     async function load() {
       // Try Supabase first
       try {
-        const rows = await fetchThreads(user.email)
+        const rows = await fetchThreadsWithUnread(user.email)
         if (!cancelled) { setThreads(rows); setLoading(false); return }
       } catch {}
 
-      // localStorage fallback
+      // localStorage fallback — messages are embedded per-thread here, so
+      // unread count and the last message are derived locally instead of
+      // via a second query.
       try {
         const all = JSON.parse(localStorage.getItem('cs_threads') || '[]')
         const mine = all
           .filter(t => t.p1 === user.email || t.p2 === user.email)
-          .sort((a, b) => new Date(b.lastAt || b.createdAt) - new Date(a.lastAt || a.createdAt))
+          .map(t => {
+            const msgs = t.messages || []
+            const last = msgs[msgs.length - 1]
+            const unreadCount = msgs.filter(m => m.from !== user.email && !m.read).length
+            return { ...t, unreadCount, lastMessage: last ? { from: last.from, text: last.text, at: last.at } : null }
+          })
+          .sort((a, b) => new Date(b.lastMessage?.at || b.lastAt || b.createdAt) - new Date(a.lastMessage?.at || a.lastAt || a.createdAt))
         if (!cancelled) setThreads(mine)
       } catch {
         if (!cancelled) setThreads([])
@@ -87,10 +95,9 @@ export default function Messages() {
           const other = t.p1 === user.email
             ? { name: t.p2Name, color: t.p2Color }
             : { name: t.p1Name, color: t.p1Color }
-          // localStorage threads embed messages; Supabase threads do not
-          const msgs    = t.messages || []
-          const last    = msgs[msgs.length - 1]
-          const unread  = last && last.from !== user.email && !last.read
+          const last    = t.lastMessage
+          const unreadCount = t.unreadCount || 0
+          const unread  = unreadCount > 0
           const preview = last ? last.text : 'New chat'
           const timeStr = last ? fmtTime(last.at) : (t.lastAt ? fmtTime(t.lastAt) : '')
 
@@ -98,9 +105,9 @@ export default function Messages() {
             <div
               key={t.id}
               onClick={() => navigate(`/chat/${encodeURIComponent(t.id)}`)}
-              style={{ display: 'flex', gap: 10, padding: '14px 16px', borderBottom: `1px solid ${bdr}`, cursor: 'pointer', transition: 'all 0.18s' }}
+              style={{ display: 'flex', gap: 10, padding: '14px 16px', borderBottom: `1px solid ${bdr}`, cursor: 'pointer', transition: 'all 0.18s', background: unread ? accbg : 'transparent' }}
               onMouseEnter={e => e.currentTarget.style.background = bg3}
-              onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+              onMouseLeave={e => e.currentTarget.style.background = unread ? accbg : 'transparent'}
             >
               {/* Avatar with unread dot */}
               <div style={{ position: 'relative', flexShrink: 0 }}>
@@ -112,9 +119,16 @@ export default function Messages() {
 
               {/* Text */}
               <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 2 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 2 }}>
                   <div style={{ fontSize: 14, fontWeight: unread ? 700 : 500, color: text }}>{other.name}</div>
-                  <div style={{ fontSize: 11, color: t3 }}>{timeStr}</div>
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4 }}>
+                    <div style={{ fontSize: 11, color: unread ? acc : t3, fontWeight: unread ? 700 : 400 }}>{timeStr}</div>
+                    {unread && (
+                      <div style={{ minWidth: 18, height: 18, borderRadius: 999, background: red, color: '#fff', fontSize: 10.5, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 5px' }}>
+                        {unreadCount > 99 ? '99+' : unreadCount}
+                      </div>
+                    )}
+                  </div>
                 </div>
                 {t.listingId && t.listingTitle && (
                   <div
@@ -124,7 +138,7 @@ export default function Messages() {
                     {t.listingTitle} ↗
                   </div>
                 )}
-                <div style={{ fontSize: 12, color: t2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 220 }}>
+                <div style={{ fontSize: 12, color: unread ? text : t2, fontWeight: unread ? 600 : 400, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 220 }}>
                   {preview}
                 </div>
               </div>

@@ -342,6 +342,44 @@ export async function fetchThreads(userEmail) {
 }
 
 /**
+ * Fetch all of a user's threads (newest-activity first) with each thread's
+ * unread count and last message attached, computed client-side from a
+ * single messages query — avoids one round-trip per thread.
+ * @param {string} userEmail
+ * @returns {Promise<Array>}  threads with { unreadCount, lastMessage }
+ */
+export async function fetchThreadsWithUnread(userEmail) {
+  const threads = await fetchThreads(userEmail);
+  if (!threads.length) return threads;
+
+  const threadIds = threads.map(t => t.id);
+  const { data: msgs, error } = await supabase
+    .from('messages')
+    .select('thread_id, from_email, text, read, created_at')
+    .in('thread_id', threadIds)
+    .order('created_at', { ascending: true });
+  if (error) throw error;
+
+  const byThread = {};
+  for (const m of msgs ?? []) {
+    const bucket = byThread[m.thread_id] ?? (byThread[m.thread_id] = { unreadCount: 0, last: null });
+    bucket.last = m; // ascending order — last write wins, ends up as the newest message
+    if (!m.read && m.from_email !== userEmail) bucket.unreadCount++;
+  }
+
+  return threads
+    .map(t => {
+      const bucket = byThread[t.id];
+      return {
+        ...t,
+        unreadCount: bucket?.unreadCount ?? 0,
+        lastMessage: bucket?.last ? { from: bucket.last.from_email, text: bucket.last.text, at: bucket.last.created_at } : null,
+      };
+    })
+    .sort((a, b) => new Date(b.lastMessage?.at || b.lastAt || b.createdAt) - new Date(a.lastMessage?.at || a.lastAt || a.createdAt));
+}
+
+/**
  * Fetch a single thread by UUID.
  * @param {string} threadId  Supabase UUID
  * @returns {Promise<Object>}
