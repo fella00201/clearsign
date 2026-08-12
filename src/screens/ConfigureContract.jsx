@@ -25,21 +25,60 @@ const inputCss = {
   outline: 'none', boxSizing: 'border-box', WebkitAppearance: 'none',
 }
 
-function Field({ label, children, hint }) {
+// Small "?" icon that reveals a plain-language explanation on hover (desktop)
+// or tap (touch) — for options like "grace period" whose meaning isn't
+// obvious from the label alone.
+function InfoTip({ text: tipText }) {
+  const [open, setOpen] = useState(false)
+  return (
+    <span
+      style={{ position: 'relative', display: 'inline-flex', verticalAlign: 'middle', marginLeft: 6 }}
+      onMouseEnter={() => setOpen(true)}
+      onMouseLeave={() => setOpen(false)}
+    >
+      <button
+        type="button"
+        onClick={() => setOpen(o => !o)}
+        aria-label="More info"
+        style={{
+          width: 15, height: 15, borderRadius: '50%', border: `1px solid ${t3}`, background: 'transparent',
+          color: t3, fontSize: 9.5, fontWeight: 700, cursor: 'pointer', padding: 0,
+          display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1, fontFamily: sans,
+        }}
+      >
+        ?
+      </button>
+      {open && (
+        <div
+          style={{
+            position: 'absolute', bottom: '135%', left: 0,
+            background: text, color: bg2, fontSize: 11.5, lineHeight: 1.45, padding: '8px 10px',
+            borderRadius: 8, width: 210, zIndex: 20, boxShadow: '0 4px 14px rgba(0,0,0,0.22)',
+            fontWeight: 400, textTransform: 'none', letterSpacing: 'normal', fontFamily: sans,
+          }}
+        >
+          {tipText}
+        </div>
+      )}
+    </span>
+  )
+}
+
+function Field({ label, children, hint, info }) {
   return (
     <div style={{ marginBottom: 16 }}>
-      <label style={labelStyle}>{label}</label>
+      <label style={labelStyle}>{label}{info && <InfoTip text={info} />}</label>
       {children}
       {hint && <div style={{ fontSize: 11, color: t3, marginTop: 5 }}>{hint}</div>}
     </div>
   )
 }
 
-function TriToggle({ label, value, onChange }) {
+function TriToggle({ label, value, onChange, info }) {
   const opts = [['Not specified', null], ['Allowed', true], ['Not allowed', false]]
   return (
     <div style={{ marginBottom: 14 }}>
-      <label style={labelStyle}>{label}</label>
+      <label style={labelStyle}>{label}{info && <InfoTip text={info} />}</label>
       <div style={{ display: 'flex', gap: 6 }}>
         {opts.map(([text_, val]) => {
           const on = value === val
@@ -61,11 +100,11 @@ function TriToggle({ label, value, onChange }) {
   )
 }
 
-function Section({ title, children }) {
+function Section({ title, children, info }) {
   return (
     <div style={{ background: bg2, border: `1px solid ${bdr}`, borderRadius: 14, padding: 16, marginBottom: 14 }}>
-      <div style={{ fontSize: 12, fontWeight: 700, color: t3, textTransform: 'uppercase', letterSpacing: '0.6px', marginBottom: 12 }}>
-        {title}
+      <div style={{ fontSize: 12, fontWeight: 700, color: t3, textTransform: 'uppercase', letterSpacing: '0.6px', marginBottom: 12, display: 'flex', alignItems: 'center' }}>
+        {title}{info && <InfoTip text={info} />}
       </div>
       {children}
     </div>
@@ -236,7 +275,7 @@ export default function ConfigureContract() {
           </Section>
         )}
 
-        <Section title="Term">
+        <Section title="Term" info="Fixed dates lock in an exact end date, like a lease. Open-ended keeps the rental going indefinitely until either side gives the required notice to end it.">
           <div style={{ display: 'flex', gap: 6, marginBottom: 14 }}>
             {[['fixed', 'Fixed dates'], ['open_ended', 'Open-ended']].map(([val, lbl]) => {
               const on = termType === val
@@ -278,19 +317,20 @@ export default function ConfigureContract() {
           )}
         </Section>
 
-        <Section title="Optional terms">
+        <Section title="Optional terms" info="Leave any of these as “Not specified” to leave it unaddressed in the contract — only set one if you want it explicitly allowed or forbidden.">
           <TriToggle label="Pets" value={petsAllowed} onChange={setPetsAllowed} />
           <TriToggle label="Smoking" value={smokingAllowed} onChange={setSmokingAllowed} />
-          <TriToggle label="Subletting" value={sublettingAllowed} onChange={setSublettingAllowed} />
+          <TriToggle label="Subletting" value={sublettingAllowed} onChange={setSublettingAllowed} info="Whether the tenant is allowed to rent out the room/space to someone else during their stay." />
 
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: lateFeeEnabled ? 10 : 0 }}>
             <input type="checkbox" id="latefee" checked={lateFeeEnabled} onChange={e => setLateFeeEnabled(e.target.checked)} style={{ width: 16, height: 16 }} />
             <label htmlFor="latefee" style={{ fontSize: 13, color: text, cursor: 'pointer' }}>Late payment fee</label>
+            <InfoTip text="Charges the tenant an extra fee if a payment is late, after the grace period below has passed." />
           </div>
           {lateFeeEnabled && (
             <div style={{ display: 'flex', gap: 8, marginBottom: 14 }}>
               <div style={{ flex: 1 }}>
-                <label style={{ ...labelStyle, fontSize: 10 }}>Grace period (days)</label>
+                <label style={{ ...labelStyle, fontSize: 10 }}>Grace period (days)<InfoTip text="How many days after the due date the tenant has before the late fee applies. E.g. rent due the 1st with a 5-day grace period means the fee only kicks in from the 6th onward." /></label>
                 <input type="number" min="0" value={lateFeeGraceDays} onChange={e => setLateFeeGraceDays(e.target.value)} style={inputCss} />
               </div>
               <div style={{ flex: 1 }}>
@@ -305,8 +345,12 @@ export default function ConfigureContract() {
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
                 <input type="checkbox" id="autorenew" checked={autoRenew} onChange={e => setAutoRenew(e.target.checked)} style={{ width: 16, height: 16 }} />
                 <label htmlFor="autorenew" style={{ fontSize: 13, color: text, cursor: 'pointer' }}>Auto-renew month-to-month after end date</label>
+                <InfoTip text="If neither side ends the contract by the end date, it automatically keeps going on a month-to-month basis until either party gives 30 days' notice to stop." />
               </div>
-              <Field label="Early termination fee (optional)">
+              <Field
+                label="Early termination fee (optional)"
+                info="A fee either party agrees to pay if they end the contract before the agreed end date. Leave blank if you don't want one."
+              >
                 <input type="number" min="0" placeholder="Leave blank for none" value={earlyTerminationFee} onChange={e => setEarlyTerminationFee(e.target.value)} style={inputCss} />
               </Field>
             </>

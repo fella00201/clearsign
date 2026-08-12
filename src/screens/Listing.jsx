@@ -143,9 +143,14 @@ function AvailabilityCalendar({ listing, isOwn }) {
       </div>
 
       <div style={{ display: 'flex', gap: 14, marginTop: 12, flexWrap: 'wrap' }}>
-        {[['Booked', acc], ['Margin buffer', bg4], ['Blocked', `${t3}66`]].map(([label, color]) => (
+        {[
+          ['Available', bg3, `1px solid ${bdr}`],
+          ['Booked', acc, 'none'],
+          ['Margin buffer', bg4, 'none'],
+          ['Blocked', `${t3}66`, 'none'],
+        ].map(([label, color, border]) => (
           <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-            <span style={{ width: 8, height: 8, borderRadius: 3, background: color, display: 'inline-block' }} />
+            <span style={{ width: 9, height: 9, borderRadius: '50%', background: color, border, display: 'inline-block', flexShrink: 0 }} />
             <span style={{ fontSize: 10.5, color: t3 }}>{label}</span>
           </div>
         ))}
