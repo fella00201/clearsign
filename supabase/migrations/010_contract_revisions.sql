@@ -13,8 +13,13 @@ alter table public.contracts
   add column if not exists revised_at timestamptz;
 
 -- Backfill proposed_by_email for existing rows so "whose turn is it"
--- display logic has something sane to work with immediately.
+-- display logic has something sane to work with immediately. Sealed
+-- contracts are skipped — the 006 integrity trigger permanently freezes
+-- any row once sealed (by design, so a binding contract can never be
+-- touched again), and proposed_by_email is only used for "who should
+-- review this" UI, which is moot once a contract is already sealed.
 update public.contracts
   set proposed_by_email = creator_email,
       proposed_by_name  = creator_name
-  where proposed_by_email is null;
+  where proposed_by_email is null
+    and status <> 'sealed';
