@@ -2,6 +2,7 @@ import { useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useContracts } from '../store/useContracts'
 import { useAuth } from '../store/useAuth'
+import { markSealedSeen } from '../lib/sealedTracking'
 import { bg, bg2, bdr, text, t2, acc, green, amber, sans, serif, CAT_COLORS } from '../theme'
 
 const pink = CAT_COLORS.service.ink
@@ -35,6 +36,13 @@ export default function Sealed() {
   const activeDoc = useContracts(s => s.activeDoc)
 
   useEffect(() => { if (!activeDoc) navigate('/') }, [activeDoc, navigate])
+
+  // Whoever sees this screen — live, right after signing, or via the
+  // login celebration for a contract completed while they were away —
+  // never needs the "you missed this" popup for it again.
+  useEffect(() => {
+    if (activeDoc && user?.email) markSealedSeen(user.email, [activeDoc.id])
+  }, [activeDoc?.id, user?.email])
 
   useEffect(() => {
     const keyframes = CONFETTI.map((p, i) => `

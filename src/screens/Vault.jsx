@@ -2,7 +2,7 @@ import { useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useContracts } from '../store/useContracts'
 import { useAuth } from '../store/useAuth'
-import { bg, bg2, bg3, bdr, text, t2, t3, acc, green, sans, serif } from '../theme'
+import { bg, bg2, bg3, bdr, text, t2, t3, green, sans, serif } from '../theme'
 
 function initials(n) {
   return (n || '?').split(' ').map(w => w[0] || '').slice(0, 2).join('').toUpperCase() || '?'
@@ -34,8 +34,15 @@ export default function Vault() {
   const setActiveDoc   = useContracts(s => s.setActiveDoc)
   useEffect(() => { loadContracts(user?.email) }, [loadContracts, user?.email])
 
+  // Vault holds finished business only — a contract still being negotiated
+  // or awaiting a signature lives in the chat with the other party instead
+  // (see the persistent contract card in Chat.jsx). "Sealed" is also
+  // checked from the raw signatures, not just status, as a defensive
+  // backstop against the same status-never-flipped bug loadContracts()
+  // self-heals on load.
   const mine = contracts.filter(c =>
-    c.creatorEmail === user?.email || c.counterpartyEmail === user?.email
+    (c.creatorEmail === user?.email || c.counterpartyEmail === user?.email) &&
+    (c.status === 'sealed' || (c.creatorSignedAt && c.counterpartySignedAt))
   )
 
   function open(c) {
@@ -70,18 +77,14 @@ export default function Vault() {
         {mine.length === 0 ? (
           <div style={{ background: bg3, border: `1px solid ${bdr}`, borderRadius: 14, padding: '32px 20px', textAlign: 'center' }}>
             <div style={{ fontSize: 13, color: t3, lineHeight: 1.6 }}>
-              No contracts yet.<br />Create one from a listing.
+              No sealed contracts yet.<br />A contract moves here once both parties have signed — until then, find it in your conversation with the other party.
             </div>
           </div>
         ) : (
           mine.map(c => {
-            const sealed = c.status === 'sealed'
-            const other  = c.creatorEmail === user?.email
+            const other = c.creatorEmail === user?.email
               ? { name: c.counterpartyName, color: c.counterpartyColor }
               : { name: c.creatorName,      color: c.creatorColor }
-            const mySigned = c.creatorEmail === user?.email
-              ? !!c.creatorSignedAt
-              : !!c.counterpartySignedAt
 
             return (
               <div
@@ -101,12 +104,10 @@ export default function Vault() {
                     display: 'inline-flex', alignItems: 'center', gap: 4, flexShrink: 0,
                     fontSize: 10, fontWeight: 700, letterSpacing: '0.4px', textTransform: 'uppercase',
                     padding: '3px 8px', borderRadius: 999,
-                    background: sealed ? `${green}22` : `${acc}22`,
-                    color: sealed ? green : acc,
-                    border: `1px solid ${sealed ? green : acc}55`,
+                    background: `${green}22`, color: green, border: `1px solid ${green}55`,
                   }}>
                     <span style={{ width: 5, height: 5, borderRadius: '50%', background: 'currentColor', flexShrink: 0 }} />
-                    {sealed ? 'Sealed' : 'Pending'}
+                    Sealed
                   </div>
                 </div>
                 {c.listingId && c.listingTitle && (
@@ -121,15 +122,8 @@ export default function Vault() {
                     Re: {c.listingTitle} ↗
                   </div>
                 )}
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <div style={{ fontSize: 11, color: t3 }}>
-                    {fmtDate(sealed ? c.sealedAt : c.createdAt)}
-                  </div>
-                  {!sealed && (
-                    <div style={{ fontSize: 11, color: mySigned ? green : acc }}>
-                      {mySigned ? 'You signed · waiting' : 'Awaiting your signature'}
-                    </div>
-                  )}
+                <div style={{ fontSize: 11, color: t3 }}>
+                  {fmtDate(c.sealedAt || c.createdAt)}
                 </div>
               </div>
             )

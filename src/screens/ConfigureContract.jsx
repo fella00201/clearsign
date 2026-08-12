@@ -3,8 +3,9 @@ import { useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../store/useAuth'
 import { useContracts } from '../store/useContracts'
 import { generateContract } from '../lib/contracts'
-import { fetchContractsByListing } from '../lib/supabase'
+import { fetchContractsByListing, fetchListingById } from '../lib/supabase'
 import { checkAvailability, addDays, daysBetween } from '../lib/availability'
+import { diffOptions } from '../lib/contractDiff'
 import { bg, bg2, bg3, bdr, text, t2, t3, acc, red, redbg, green, sans, serif } from '../theme'
 
 const UUID_RE = /^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/i
@@ -111,6 +112,22 @@ function Section({ title, children, info }) {
   )
 }
 
+function newId(len = 12) {
+  return Math.random().toString(36).slice(2, len)
+}
+
+function notifyOtherParty({ otherEmail, contractId, listingId, title, body }) {
+  try {
+    const notifKey = `cs_notifs_${otherEmail}`
+    const existing = JSON.parse(localStorage.getItem(notifKey) || '[]')
+    const notif = {
+      id: Math.random().toString(36).slice(2, 10), type: 'contract_request',
+      title, body, at: new Date().toISOString(), read: false, contractId, listingId,
+    }
+    localStorage.setItem(notifKey, JSON.stringify([notif, ...existing]))
+  } catch {}
+}
+
 export default function ConfigureContract() {
   const navigate = useNavigate()
   const location = useLocation()
@@ -118,29 +135,52 @@ export default function ConfigureContract() {
   const myContracts = useContracts(s => s.contracts)
   const loadContracts = useContracts(s => s.loadContracts)
   const saveContract = useContracts(s => s.saveContract)
+  const reviseContract = useContracts(s => s.reviseContract)
 
-  const { listing, otherName, otherEmail, otherColor } = location.state || {}
+  const {
+    listing: listingFromState, listingId, otherName, otherEmail, otherColor,
+    editingContract, threadId,
+  } = location.state || {}
 
-  // Pre-fill from the listing's default rental terms (set by the owner when
-  // posting) — everything below stays fully editable per-contract, this is
-  // only a starting point.
-  const defaults = listing?.defaultOptions || {}
-  const hasDefaults = Object.keys(defaults).length > 0
+  const isEditing = !!editingContract
+
+  // Creation is handed the full listing object already; "suggest changes"
+  // (from Contract.jsx) only has listingId, so resolve it here — same
+  // Supabase-then-local-cache fallback used elsewhere in the app.
+  const [listing, setListing] = useState(listingFromState || null)
+  const [listingLoading, setListingLoading] = useState(!listingFromState && !!listingId)
+
+  useEffect(() => {
+    if (listingFromState || !listingId) return
+    fetchListingById(listingId).then(l => { setListing(l); setListingLoading(false) }).catch(() => {
+      try {
+        const local = JSON.parse(localStorage.getItem('cs_listings_user') || '[]')
+        setListing(local.find(l => l.id === listingId) || null)
+      } catch { setListing(null) }
+      setListingLoading(false)
+    })
+  }, [listingFromState, listingId])
+
+  // Seed from the contract being revised, else the listing's default rental
+  // terms (set by the owner when posting) — everything below stays fully
+  // editable, this is only a starting point.
+  const seed = editingContract?.options || listing?.defaultOptions || {}
+  const hasSeed = Object.keys(seed).length > 0
 
   const [listingContracts, setListingContracts] = useState([])
   const [reuseId, setReuseId] = useState('')
-  const [termType, setTermType] = useState(defaults.termType || 'fixed')
-  const [startDate, setStartDate] = useState(TODAY)
-  const [endDate, setEndDate] = useState('')
-  const [noticePeriodDays, setNoticePeriodDays] = useState(defaults.noticePeriodDays || 30)
-  const [petsAllowed, setPetsAllowed] = useState(defaults.petsAllowed ?? null)
-  const [smokingAllowed, setSmokingAllowed] = useState(defaults.smokingAllowed ?? null)
-  const [sublettingAllowed, setSublettingAllowed] = useState(defaults.sublettingAllowed ?? null)
-  const [lateFeeEnabled, setLateFeeEnabled] = useState(!!defaults.lateFee?.amount)
-  const [lateFeeGraceDays, setLateFeeGraceDays] = useState(defaults.lateFee?.graceDays || 5)
-  const [lateFeeAmount, setLateFeeAmount] = useState(defaults.lateFee?.amount ? String(defaults.lateFee.amount) : '')
-  const [autoRenew, setAutoRenew] = useState(!!defaults.autoRenew)
-  const [earlyTerminationFee, setEarlyTerminationFee] = useState(defaults.earlyTerminationFee ? String(defaults.earlyTerminationFee) : '')
+  const [termType, setTermType] = useState(seed.termType || 'fixed')
+  const [startDate, setStartDate] = useState(editingContract?.startDate || TODAY)
+  const [endDate, setEndDate] = useState(editingContract?.endDate || '')
+  const [noticePeriodDays, setNoticePeriodDays] = useState(seed.noticePeriodDays || 30)
+  const [petsAllowed, setPetsAllowed] = useState(seed.petsAllowed ?? null)
+  const [smokingAllowed, setSmokingAllowed] = useState(seed.smokingAllowed ?? null)
+  const [sublettingAllowed, setSublettingAllowed] = useState(seed.sublettingAllowed ?? null)
+  const [lateFeeEnabled, setLateFeeEnabled] = useState(!!seed.lateFee?.amount)
+  const [lateFeeGraceDays, setLateFeeGraceDays] = useState(seed.lateFee?.graceDays || 5)
+  const [lateFeeAmount, setLateFeeAmount] = useState(seed.lateFee?.amount ? String(seed.lateFee.amount) : '')
+  const [autoRenew, setAutoRenew] = useState(!!seed.autoRenew)
+  const [earlyTerminationFee, setEarlyTerminationFee] = useState(seed.earlyTerminationFee ? String(seed.earlyTerminationFee) : '')
   const [generating, setGenerating] = useState(false)
 
   useEffect(() => { if (user?.email) loadContracts(user.email) }, [loadContracts, user?.email])
@@ -151,12 +191,20 @@ export default function ConfigureContract() {
   }, [listing?.id])
 
   const reuseCandidates = (() => {
-    if (!listing?.id) return []
+    if (!listing?.id || isEditing) return []
     const mine = myContracts.filter(c => c.creatorEmail === user?.email && c.termType)
     const sameListing = mine.filter(c => c.listingId === listing.id)
     const rest = mine.filter(c => c.listingId !== listing.id)
     return [...sameListing, ...rest].slice(0, 10)
   })()
+
+  if (listingLoading) {
+    return (
+      <div style={{ flex: 1, background: bg, display: 'flex', alignItems: 'center', justifyContent: 'center', color: t2, fontFamily: sans, fontSize: 14 }}>
+        Loading…
+      </div>
+    )
+  }
 
   if (!listing || !otherEmail) {
     navigate('/', { replace: true })
@@ -193,30 +241,52 @@ export default function ConfigureContract() {
 
   const candidateEnd = termType === 'fixed' ? endDate : null
   const canCheck = termType === 'fixed' ? !!(startDate && endDate) : !!startDate
+  // Exclude the contract being revised from its own collision check —
+  // otherwise it would always appear to conflict with itself.
+  const collisionContracts = isEditing
+    ? listingContracts.filter(c => c.id !== editingContract.id)
+    : listingContracts
   const availability = canCheck
-    ? checkAvailability(listingContracts, listing.bookingMarginDays, startDate, candidateEnd)
+    ? checkAvailability(collisionContracts, listing.bookingMarginDays, startDate, candidateEnd)
     : { available: true, conflictingContract: null }
 
   const readyToGenerate = canCheck && availability.available &&
     (termType === 'fixed' ? endDate > startDate : noticePeriodDays > 0)
 
+  const liveOptions = {
+    termType, startDate,
+    endDate: termType === 'fixed' ? endDate : null,
+    noticePeriodDays: termType === 'open_ended' ? Number(noticePeriodDays) : null,
+    petsAllowed, smokingAllowed, sublettingAllowed,
+    autoRenew: termType === 'fixed' ? autoRenew : false,
+    earlyTerminationFee: termType === 'fixed' && earlyTerminationFee ? Number(earlyTerminationFee) : null,
+    lateFee: lateFeeEnabled && lateFeeAmount ? { graceDays: Number(lateFeeGraceDays), amount: Number(lateFeeAmount) } : null,
+  }
+  const liveDiff = isEditing ? diffOptions(editingContract.options, liveOptions) : []
+
   async function handleGenerate() {
     if (!readyToGenerate || generating) return
     setGenerating(true)
     try {
-      const options = {
-        termType, startDate,
-        endDate: termType === 'fixed' ? endDate : null,
-        noticePeriodDays: termType === 'open_ended' ? Number(noticePeriodDays) : null,
-        petsAllowed, smokingAllowed, sublettingAllowed,
-        autoRenew: termType === 'fixed' ? autoRenew : false,
-        earlyTerminationFee: termType === 'fixed' && earlyTerminationFee ? Number(earlyTerminationFee) : null,
-        lateFee: lateFeeEnabled && lateFeeAmount ? { graceDays: Number(lateFeeGraceDays), amount: Number(lateFeeAmount) } : null,
+      const options = liveOptions
+      const { contractText, templateId, templateVersion } = await generateContract(listing, user.name, otherName, options)
+
+      if (isEditing) {
+        const revised = await reviseContract(editingContract.id, {
+          options, contractText, templateId, templateVersion,
+          byEmail: user.email, byName: user.name,
+        })
+        notifyOtherParty({
+          otherEmail, contractId: revised.id, listingId: listing.id,
+          title: 'Contract terms updated',
+          body: `${user.name} proposed changes to the contract for: "${listing.title}"`,
+        })
+        navigate(`/contract/${revised.id}`, { state: { threadId } })
+        return
       }
 
-      const { contractText, templateId, templateVersion } = await generateContract(listing, user.name, otherName, options)
       const doc = {
-        id: Math.random().toString(36).slice(2, 12),
+        id: newId(),
         listingId: listing.id,
         listingTitle: listing.title,
         contractText, templateId, templateVersion,
@@ -228,17 +298,12 @@ export default function ConfigureContract() {
         createdAt: new Date().toISOString(),
       }
       const saved = await saveContract(doc)
-      try {
-        const notifKey = `cs_notifs_${otherEmail}`
-        const existing = JSON.parse(localStorage.getItem(notifKey) || '[]')
-        const notif = {
-          id: Math.random().toString(36).slice(2, 10), type: 'contract_request',
-          title: 'New contract request', body: `${user.name} sent you a contract for: "${listing.title}"`,
-          at: new Date().toISOString(), read: false, contractId: saved.id, listingId: listing.id,
-        }
-        localStorage.setItem(notifKey, JSON.stringify([notif, ...existing]))
-      } catch {}
-      navigate(`/contract/${saved.id}`)
+      notifyOtherParty({
+        otherEmail, contractId: saved.id, listingId: listing.id,
+        title: 'New contract request',
+        body: `${user.name} sent you a contract for: "${listing.title}"`,
+      })
+      navigate(`/contract/${saved.id}`, { state: { threadId } })
     } catch {
       setGenerating(false)
     }
@@ -252,7 +317,7 @@ export default function ConfigureContract() {
             <path d="M11 4L6 9l5 5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
         </button>
-        <div style={{ fontSize: 14, fontWeight: 600, color: text }}>Configure contract</div>
+        <div style={{ fontSize: 14, fontWeight: 600, color: text }}>{isEditing ? 'Suggest changes' : 'Configure contract'}</div>
         <div style={{ width: 44 }} />
       </div>
 
@@ -260,11 +325,15 @@ export default function ConfigureContract() {
         <div style={{ fontFamily: serif, fontSize: 22, fontWeight: 300, color: text, marginBottom: 4 }}>
           {listing.title}
         </div>
-        <div style={{ fontSize: 13, color: t2, marginBottom: hasDefaults ? 8 : 20 }}>
-          With {otherName} · before this contract is generated
+        <div style={{ fontSize: 13, color: t2, marginBottom: hasSeed ? 8 : 20 }}>
+          With {otherName} · {isEditing ? 'propose changed terms' : 'before this contract is generated'}
         </div>
 
-        {hasDefaults && (
+        {isEditing ? (
+          <div style={{ fontSize: 12, color: t3, marginBottom: 20, lineHeight: 1.5 }}>
+            Editing the current terms — {otherName} will see exactly what changed and can accept, sign, or propose further changes.
+          </div>
+        ) : hasSeed && (
           <div style={{ fontSize: 12, color: t3, marginBottom: 20, lineHeight: 1.5 }}>
             Pre-filled from this listing's default terms — adjust anything below to match what you and {otherName} actually agree on.
           </div>
@@ -368,6 +437,19 @@ export default function ConfigureContract() {
             </>
           )}
         </Section>
+
+        {isEditing && liveDiff.length > 0 && (
+          <Section title={`What you're changing (${liveDiff.length})`}>
+            {liveDiff.map(d => (
+              <div key={d.key} style={{ fontSize: 12.5, marginBottom: 8, lineHeight: 1.5 }}>
+                <span style={{ color: t2, fontWeight: 600 }}>{d.label}: </span>
+                <span style={{ color: red, textDecoration: 'line-through' }}>{d.before}</span>
+                {' → '}
+                <span style={{ color: green, fontWeight: 600 }}>{d.after}</span>
+              </div>
+            ))}
+          </Section>
+        )}
       </div>
 
       <div style={{ padding: '14px 16px', paddingBottom: 'max(14px, env(safe-area-inset-bottom))', background: bg, borderTop: `1px solid ${bdr}`, flexShrink: 0 }}>
@@ -382,7 +464,7 @@ export default function ConfigureContract() {
             fontFamily: sans, transition: 'opacity 0.18s',
           }}
         >
-          {generating ? 'Generating…' : 'Generate contract →'}
+          {generating ? 'Sending…' : isEditing ? 'Send proposed changes →' : 'Generate contract →'}
         </button>
       </div>
     </div>

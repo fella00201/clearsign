@@ -35,7 +35,7 @@ function Stars({ rating, size = 14 }) {
   return (
     <div style={{ display: 'flex', gap: 2 }}>
       {[1, 2, 3, 4, 5].map(i => (
-        <span key={i} style={{ fontSize: size, color: rating >= i ? amber : bg4 }}>★</span>
+        <span key={i} style={{ fontSize: size, color: rating >= i ? amber : t3 }}>★</span>
       ))}
     </div>
   )

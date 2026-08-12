@@ -1,7 +1,8 @@
 import { useEffect } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
+import { useParams, useNavigate, useLocation } from 'react-router-dom'
 import { useContracts } from '../store/useContracts'
 import { useAuth } from '../store/useAuth'
+import { diffOptions } from '../lib/contractDiff'
 
 import { bg, bg2, bg3, bdr, text, t2, t3, acc, green, amber, sans, serif } from '../theme'
 import { TEMPLATE_LABELS } from '../data/contractTemplates'
@@ -26,10 +27,13 @@ function Avatar({ name, color, size = 32 }) {
 export default function Contract() {
   const { id }          = useParams()
   const navigate        = useNavigate()
+  const location        = useLocation()
   const user            = useAuth(s => s.user)
   const loadContracts   = useContracts(s => s.loadContracts)
   const contracts       = useContracts(s => s.contracts)
   const activeDoc       = useContracts(s => s.activeDoc)
+  const setActiveDoc    = useContracts(s => s.setActiveDoc)
+  const { threadId }    = location.state || {}
 
   useEffect(() => { loadContracts(user?.email) }, [loadContracts, user?.email])
 
@@ -48,6 +52,22 @@ export default function Contract() {
   const mySigned  = isCreator ? !!contract.creatorSignedAt : !!contract.counterpartySignedAt
   const canSign   = !mySigned && contract.status !== 'sealed'
   const sealed    = contract.status === 'sealed'
+  const other     = isCreator
+    ? { name: contract.counterpartyName, email: contract.counterpartyEmail, color: contract.counterpartyColor }
+    : { name: contract.creatorName,      email: contract.creatorEmail,      color: contract.creatorColor }
+  const changes   = contract.previousOptions ? diffOptions(contract.previousOptions, contract.options) : []
+  const proposedByMe = contract.proposedByEmail === user?.email
+
+  function suggestChanges() {
+    setActiveDoc(contract)
+    navigate('/configure-contract', {
+      state: {
+        listingId: contract.listingId, editingContract: contract,
+        otherName: other.name, otherEmail: other.email, otherColor: other.color,
+        threadId,
+      },
+    })
+  }
 
   const parties = [
     { name: contract.creatorName,      color: contract.creatorColor,      email: contract.creatorEmail,      signed: contract.creatorSignedAt },
@@ -104,14 +124,24 @@ export default function Contract() {
             <div style={{ fontFamily: serif, fontSize: 20, fontWeight: 300, color: text, marginBottom: 4 }}>
               {contract.listingTitle}
             </div>
-            {contract.listingId && (
-              <div
-                onClick={() => navigate(`/listing/${contract.listingId}`)}
-                style={{ fontSize: 12, color: acc, cursor: 'pointer' }}
-              >
-                View listing →
-              </div>
-            )}
+            <div style={{ display: 'flex', gap: 12 }}>
+              {contract.listingId && (
+                <div
+                  onClick={() => navigate(`/listing/${contract.listingId}`)}
+                  style={{ fontSize: 12, color: acc, cursor: 'pointer' }}
+                >
+                  View listing →
+                </div>
+              )}
+              {threadId && (
+                <div
+                  onClick={() => navigate(`/chat/${encodeURIComponent(threadId)}`)}
+                  style={{ fontSize: 12, color: acc, cursor: 'pointer' }}
+                >
+                  Back to conversation →
+                </div>
+              )}
+            </div>
           </div>
         )}
 
@@ -144,6 +174,23 @@ export default function Contract() {
           ))}
         </div>
 
+        {/* What changed — shown when the current terms are a revision */}
+        {changes.length > 0 && (
+          <div style={{ background: `${acc}0F`, border: `1px solid ${acc}55`, borderRadius: 14, padding: 16, marginBottom: 12 }}>
+            <div style={{ fontSize: 11, fontWeight: 700, color: acc, textTransform: 'uppercase', letterSpacing: '0.6px', marginBottom: 10 }}>
+              {proposedByMe ? 'You proposed these changes' : `${contract.proposedByName || 'They'} proposed these changes`}
+            </div>
+            {changes.map(c => (
+              <div key={c.key} style={{ fontSize: 12.5, marginBottom: 7, lineHeight: 1.5 }}>
+                <span style={{ color: t2, fontWeight: 600 }}>{c.label}: </span>
+                <span style={{ color: t3, textDecoration: 'line-through' }}>{c.before}</span>
+                {' → '}
+                <span style={{ color: text, fontWeight: 600 }}>{c.after}</span>
+              </div>
+            ))}
+          </div>
+        )}
+
         {/* Amber disclaimer */}
         <div style={{ background: `${amber}22`, border: `1px solid ${amber}55`, borderRadius: 8, padding: '10px 12px', marginBottom: 12, fontSize: 12, color: amber, lineHeight: 1.5 }}>
           Standard template for this listing type. Not a substitute for legal advice.
@@ -163,16 +210,7 @@ export default function Contract() {
       </div>
 
       {/* Bottom bar */}
-      {canSign ? (
-        <div style={{ padding: '14px 16px', paddingBottom: 'max(14px, env(safe-area-inset-bottom))', background: bg, borderTop: `1px solid ${bdr}`, flexShrink: 0 }}>
-          <button
-            onClick={() => navigate('/signing')}
-            style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%', padding: 14, borderRadius: 14, border: 'none', background: green, color: bg2, fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: sans, transition: 'all 0.18s' }}
-          >
-            Sign this contract →
-          </button>
-        </div>
-      ) : sealed ? (
+      {sealed ? (
         <div style={{ padding: '14px 16px', paddingBottom: 'max(14px, env(safe-area-inset-bottom))', background: bg, borderTop: `1px solid ${bdr}`, flexShrink: 0, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 9 }}>
           <button onClick={copyText} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 14, borderRadius: 14, border: `1px solid ${bdr}`, background: bg3, color: text, fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: sans }}>
             Copy
@@ -182,8 +220,25 @@ export default function Contract() {
           </button>
         </div>
       ) : (
-        <div style={{ padding: '14px 16px', paddingBottom: 'max(14px, env(safe-area-inset-bottom))', background: bg, borderTop: `1px solid ${bdr}`, flexShrink: 0, textAlign: 'center', fontSize: 13, color: t2 }}>
-          {mySigned ? "You've signed — waiting for the other party." : 'Waiting.'}
+        <div style={{ padding: '14px 16px', paddingBottom: 'max(14px, env(safe-area-inset-bottom))', background: bg, borderTop: `1px solid ${bdr}`, flexShrink: 0, display: 'flex', flexDirection: 'column', gap: 9 }}>
+          {canSign ? (
+            <button
+              onClick={() => { setActiveDoc(contract); navigate('/signing') }}
+              style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%', padding: 14, borderRadius: 14, border: 'none', background: green, color: bg2, fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: sans, transition: 'all 0.18s' }}
+            >
+              Sign this contract →
+            </button>
+          ) : (
+            <div style={{ textAlign: 'center', fontSize: 13, color: t2 }}>
+              {mySigned ? "You've signed — waiting for the other party." : 'Waiting.'}
+            </div>
+          )}
+          <button
+            onClick={suggestChanges}
+            style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%', padding: 12, borderRadius: 14, border: `1px solid ${bdr}`, background: bg3, color: text, fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: sans }}
+          >
+            Suggest changes
+          </button>
         </div>
       )}
     </div>

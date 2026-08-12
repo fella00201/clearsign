@@ -62,6 +62,57 @@ function uid() {
   return Math.random().toString(36).slice(2, 10)
 }
 
+// Persistent card summarizing the current contract for this conversation —
+// "shown next to the message box" so either party can always get to it
+// without hunting through Vault or Notifications.
+function ContractStatusCard({ contract, userEmail, otherName, onOpen }) {
+  const isCreator    = contract.creatorEmail === userEmail
+  const mySigned      = isCreator ? !!contract.creatorSignedAt : !!contract.counterpartySignedAt
+  const sealed        = contract.status === 'sealed' || (!!contract.creatorSignedAt && !!contract.counterpartySignedAt)
+  const proposedByMe  = contract.proposedByEmail === userEmail
+  const needsReview   = !sealed && !mySigned && !proposedByMe
+
+  const state = sealed
+    ? { label: 'Contract sealed', sub: contract.listingTitle || 'Both parties signed', cta: 'View contract →', tone: green }
+    : needsReview
+      ? { label: 'Needs your review', sub: `${otherName} sent contract terms`, cta: 'Review & respond →', tone: acc }
+      : mySigned
+        ? { label: 'You signed', sub: `Waiting for ${otherName}`, cta: 'View contract →', tone: t2 }
+        : { label: `Sent to ${otherName}`, sub: 'Awaiting their review', cta: 'View contract →', tone: t2 }
+
+  return (
+    <div style={{ padding: '0 14px 10px', flexShrink: 0 }}>
+      <div
+        onClick={onOpen}
+        style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10,
+          padding: '12px 14px', borderRadius: 14, cursor: 'pointer',
+          background: needsReview ? `${acc}12` : bg3,
+          border: `1px solid ${needsReview ? acc : bdr}`,
+        }}
+      >
+        <div style={{ minWidth: 0 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, fontWeight: 700, color: state.tone === green ? green : state.tone === acc ? acc : text }}>
+            📄 {state.label}
+          </div>
+          <div style={{ fontSize: 11.5, color: t2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{state.sub}</div>
+        </div>
+        <button
+          onClick={e => { e.stopPropagation(); onOpen() }}
+          style={{
+            flexShrink: 0, padding: '8px 12px', borderRadius: 10, border: 'none',
+            background: needsReview ? acc : sealed ? green : bg2,
+            color: needsReview || sealed ? '#fff' : text,
+            fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: sans,
+          }}
+        >
+          {state.cta}
+        </button>
+      </div>
+    </div>
+  )
+}
+
 // ── Screen ─────────────────────────────────────────────────────────────────
 export default function Chat() {
   const { threadId } = useParams()
@@ -70,6 +121,9 @@ export default function Chat() {
 
   const loadUnreadCount = useMessages(s => s.loadUnreadCount)
   const saveContract    = useContracts(s => s.saveContract)
+  const loadContracts   = useContracts(s => s.loadContracts)
+  const contracts       = useContracts(s => s.contracts)
+  const setActiveDoc    = useContracts(s => s.setActiveDoc)
 
   const [thread, setThread]       = useState(null)
   const [messages, setMessages]   = useState([])
@@ -186,6 +240,8 @@ export default function Chat() {
       } catch {}
     })
   }, [thread?.listingId])
+
+  useEffect(() => { if (user?.email) loadContracts(user.email) }, [loadContracts, user?.email])
 
   // Auto-scroll to bottom whenever messages change
   useEffect(() => {
@@ -332,6 +388,19 @@ export default function Chat() {
 
   const isListingOwner = listing && user && listing.ownerEmail === user.email
 
+  // The latest contract between these two people for this listing, if any —
+  // drives the persistent status card below the message list.
+  const threadContract = thread.listingId ? contracts
+    .filter(c => c.listingId === thread.listingId &&
+      ((c.creatorEmail === user?.email && c.counterpartyEmail === other.email) ||
+       (c.counterpartyEmail === user?.email && c.creatorEmail === other.email)))
+    .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))[0] : null
+
+  function openContract() {
+    setActiveDoc(threadContract)
+    navigate(`/contract/${threadContract.id}`, { state: { threadId: thread.id } })
+  }
+
   async function createContract() {
     if (generating || !listing || !user) return
 
@@ -340,7 +409,7 @@ export default function Chat() {
     // else keeps today's one-click immediate generation.
     if (listing.cat === 'rental') {
       navigate('/configure-contract', {
-        state: { listing, otherName: other.name, otherEmail: other.email, otherColor: other.color },
+        state: { listing, otherName: other.name, otherEmail: other.email, otherColor: other.color, threadId: thread.id },
       })
       return
     }
@@ -382,7 +451,7 @@ export default function Chat() {
         }
         localStorage.setItem(notifKey, JSON.stringify([notif, ...existing]))
       } catch {}
-      navigate(`/contract/${saved.id}`)
+      navigate(`/contract/${saved.id}`, { state: { threadId: thread.id } })
     } catch {
       setGenerating(false)
     }
@@ -446,8 +515,12 @@ export default function Chat() {
         })}
       </div>
 
-      {/* Create contract banner — visible to listing owner only */}
-      {isListingOwner && (
+      {/* Contract status — persistent card once a contract exists for this
+          conversation, so either party can always get back to it. Falls
+          back to the "create contract" banner (owner only) when none does. */}
+      {threadContract ? (
+        <ContractStatusCard contract={threadContract} userEmail={user.email} otherName={other.name} onOpen={openContract} />
+      ) : isListingOwner && (
         <div style={{ padding: '0 14px 10px', flexShrink: 0 }}>
           <button
             disabled={generating}

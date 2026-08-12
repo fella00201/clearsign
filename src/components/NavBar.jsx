@@ -2,8 +2,10 @@ import { useEffect, useRef, useState } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../store/useAuth'
 import { useMessages } from '../store/useMessages'
+import { useContracts } from '../store/useContracts'
 import { supabase } from '../lib/supabase'
 import { callClaude } from '../lib/anthropic'
+import { hasSeenSealedList, getSeenSealedIds, markSealedSeen } from '../lib/sealedTracking'
 import { t2, t3, acc, acc2, bdr, bg, bg2, bg3, accbg, text, red, sans, serif } from '../theme'
 
 const TABS = [
@@ -188,6 +190,36 @@ export default function NavBar() {
       .subscribe()
     return () => supabase.removeChannel(channel)
   }, [user?.email])
+
+  // "Contract sealed while you were away" celebration — fires once per
+  // login when a contract this user is party to became sealed since they
+  // last checked (e.g. the other party signed after this user had already
+  // signed and logged off). First-ever run seeds the seen-list without
+  // animating anything, so existing users aren't retroactively flooded.
+  useEffect(() => {
+    if (!user?.email) return
+    let cancelled = false
+    async function check() {
+      await useContracts.getState().loadContracts(user.email)
+      if (cancelled) return
+      const sealed = useContracts.getState().contracts.filter(c =>
+        c.status === 'sealed' && (c.creatorEmail === user.email || c.counterpartyEmail === user.email)
+      )
+      if (!hasSeenSealedList(user.email)) {
+        markSealedSeen(user.email, sealed.map(c => c.id))
+        return
+      }
+      const seen = getSeenSealedIds(user.email)
+      const unseen = sealed.filter(c => !seen.has(c.id))
+      if (!unseen.length) return
+      markSealedSeen(user.email, sealed.map(c => c.id))
+      const newest = unseen.sort((a, b) => new Date(b.sealedAt || 0) - new Date(a.sealedAt || 0))[0]
+      useContracts.getState().setActiveDoc(newest)
+      navigate('/sealed')
+    }
+    check()
+    return () => { cancelled = true }
+  }, [user?.email, navigate])
 
   useEffect(() => {
     if (msgsRef.current) msgsRef.current.scrollTop = msgsRef.current.scrollHeight

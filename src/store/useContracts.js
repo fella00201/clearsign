@@ -53,8 +53,30 @@ export const useContracts = create((set, get) => ({
         };
       });
 
-      persist(withSigs);
-      set({ contracts: withSigs });
+      // Self-heal: a contract can end up with both signatures recorded but
+      // status stuck on 'pending_counterparty' if the seal step was ever
+      // skipped client-side (e.g. the signer's local activeDoc was stale
+      // and didn't reflect the other party's already-recorded signature).
+      // Backfill status/sealedAt here so it can't stay stuck forever.
+      const healed = withSigs.map(c => {
+        if (c.creatorSignedAt && c.counterpartySignedAt && c.status !== 'sealed') {
+          const sealedAt = c.sealedAt || new Date(Math.max(
+            new Date(c.creatorSignedAt).getTime(),
+            new Date(c.counterpartySignedAt).getTime()
+          )).toISOString();
+          return { ...c, status: 'sealed', sealedAt };
+        }
+        return c;
+      });
+
+      persist(healed);
+      set({ contracts: healed });
+
+      healed.forEach((c, i) => {
+        if (c !== withSigs[i]) {
+          updateContract(c.id, { status: 'sealed', sealedAt: c.sealedAt }).catch(() => {});
+        }
+      });
     } catch (err) {
       console.warn('[Supabase] fetchContracts failed — using localStorage:', err.message);
     }
@@ -91,6 +113,60 @@ export const useContracts = create((set, get) => ({
   },
 
   setActiveDoc: (doc) => set({ activeDoc: doc }),
+
+  // ── Revise (propose changed terms) ──────────────────────────────────────
+  /**
+   * Apply a proposed revision to a contract's terms. Bumps `version`,
+   * snapshots the prior terms into `previousOptions` (so the UI can show a
+   * before/after diff), and resets both signatures — a signature given for
+   * one set of terms must never silently carry over to different terms.
+   *
+   * @param {string} contractId
+   * @param {{options, contractText, templateId?, templateVersion?, byEmail, byName}} revision
+   * @returns {Promise<Object|null>}  the revised doc, or null if not found
+   */
+  reviseContract: async (contractId, revision) => {
+    const current = get().contracts.find(c => c.id === contractId)
+    if (!current) return null
+
+    const updated = {
+      ...current,
+      version:              (current.version || 1) + 1,
+      previousOptions:      current.options,
+      options:              revision.options,
+      contractText:         revision.contractText,
+      templateId:           revision.templateId      ?? current.templateId,
+      templateVersion:      revision.templateVersion ?? current.templateVersion,
+      termType:             revision.options?.termType         ?? current.termType,
+      startDate:            revision.options?.startDate        ?? current.startDate,
+      endDate:              revision.options?.endDate          ?? current.endDate,
+      noticePeriodDays:     revision.options?.noticePeriodDays ?? current.noticePeriodDays,
+      proposedByEmail:      revision.byEmail,
+      proposedByName:       revision.byName,
+      revisedAt:            new Date().toISOString(),
+      creatorSignedAt:      null,
+      counterpartySignedAt: null,
+      creatorSigData:       null,
+      counterpartySigData:  null,
+      status:               'pending_counterparty',
+      sealedAt:             null,
+    }
+
+    const contracts = get().contracts.map(c => c.id === contractId ? updated : c)
+    persist(contracts)
+    set({ contracts, activeDoc: updated })
+
+    updateContract(contractId, {
+      options: updated.options, previousOptions: updated.previousOptions,
+      contractText: updated.contractText, templateId: updated.templateId, templateVersion: updated.templateVersion,
+      version: updated.version, proposedByEmail: updated.proposedByEmail, proposedByName: updated.proposedByName,
+      revisedAt: updated.revisedAt, startDate: updated.startDate, endDate: updated.endDate,
+      noticePeriodDays: updated.noticePeriodDays, status: updated.status,
+      creatorSignedAt: null, counterpartySignedAt: null, sealedAt: null,
+    }).catch(err => console.warn('[Supabase] reviseContract update failed:', err.message))
+
+    return updated
+  },
 
   // ── Sign ──────────────────────────────────────────────────────────────────
   signContract: (contractId, role, sigData) => {

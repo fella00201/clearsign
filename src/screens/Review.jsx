@@ -99,7 +99,7 @@ export default function Review() {
                 onMouseLeave={() => setHover(0)}
                 style={{
                   fontSize: 36, cursor: 'pointer',
-                  color: displayed >= i ? amber : bg3,
+                  color: displayed >= i ? amber : t3,
                   transition: 'color 0.1s',
                   lineHeight: 1,
                 }}

@@ -199,6 +199,11 @@ function mapContractRow(row) {
     status:               row.status,
     createdAt:            row.created_at,
     sealedAt:             row.sealed_at              ?? null,
+    version:              row.version                ?? 1,
+    previousOptions:      row.previous_options        ?? null,
+    proposedByEmail:      row.proposed_by_email       ?? row.creator_email ?? '',
+    proposedByName:       row.proposed_by_name        ?? row.creator_name  ?? '',
+    revisedAt:            row.revised_at              ?? null,
   };
 }
 
@@ -264,6 +269,9 @@ export async function insertContract(doc) {
       counterparty_email: doc.counterpartyEmail ?? '',
       counterparty_color: doc.counterpartyColor ?? '#5b8fff',
       status:            doc.status            ?? 'pending',
+      version:           1,
+      proposed_by_email: doc.creatorEmail      ?? '',
+      proposed_by_name:  doc.creatorName       ?? '',
     })
     .select('*')
     .single();
@@ -285,6 +293,18 @@ export async function updateContract(id, updates) {
   if (updates.creatorSignedAt      !== undefined) mapped.creator_signed_at      = updates.creatorSignedAt;
   if (updates.counterpartySignedAt !== undefined) mapped.counterparty_signed_at = updates.counterpartySignedAt;
   if (updates.sealedAt             !== undefined) mapped.sealed_at              = updates.sealedAt;
+  if (updates.options              !== undefined) mapped.options                = updates.options;
+  if (updates.previousOptions      !== undefined) mapped.previous_options       = updates.previousOptions;
+  if (updates.contractText         !== undefined) mapped.contract_text          = updates.contractText;
+  if (updates.templateId           !== undefined) mapped.template_id            = updates.templateId;
+  if (updates.templateVersion      !== undefined) mapped.template_version       = updates.templateVersion;
+  if (updates.version              !== undefined) mapped.version                = updates.version;
+  if (updates.proposedByEmail      !== undefined) mapped.proposed_by_email      = updates.proposedByEmail;
+  if (updates.proposedByName       !== undefined) mapped.proposed_by_name       = updates.proposedByName;
+  if (updates.revisedAt            !== undefined) mapped.revised_at             = updates.revisedAt;
+  if (updates.startDate            !== undefined) mapped.start_date             = updates.startDate;
+  if (updates.endDate              !== undefined) mapped.end_date               = updates.endDate;
+  if (updates.noticePeriodDays     !== undefined) mapped.notice_period_days     = updates.noticePeriodDays;
 
   const { error } = await supabase
     .from('contracts')
